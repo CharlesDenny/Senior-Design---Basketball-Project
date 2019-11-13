@@ -10,6 +10,8 @@ homeTeamID = gameEvents[0]["home"]["teamid"]
 visitorTeam = gameEvents[0]["visitor"]["name"]
 visitorTeamID = gameEvents[0]["visitor"]["teamid"]
 
+allBallData = []
+
 print("Game ID: " + gameID)
 print("Game Date: " + gameDate)
 print("Home: " + homeTeam + " ID: " + str(homeTeamID))
@@ -29,32 +31,23 @@ for event in gameEvents:
     for player in gameEvents[eventCount]["visitor"]["players"]:
         print("\t" + str(player["lastname"]))
 
-
+    #Get Moments for each event
     print("Moments: ")
     for moment in gameEvents[eventCount]["moments"]:
-        print("\t\tQuarter: " + str(moment[0]) + "\t\t" + str(moment[2]) + "\t\t" + str(moment[3]))
+        # quarter     moment ID (?)   time remaining in quarter     time remaining on shot clock      ????
+        print("\t\tQuarter: " + str(moment[0]) + "\t\t" + str(moment[1])
+              + "\t\t" + str(moment[2]) + "\t\t" + str(moment[3]) + "\t\t" + str(moment[4]))
 
+        print("\t\t\t Ball Data: " + str(moment[5][0]))
+        allBallData.append(moment[5][0])
+
+        #Get the data of each player from the moment
+        for playerDataLine in moment[5]:
+            print("\t \t\t\t" + str(playerDataLine))
 
     print("\n")
     eventCount += 1
-
-
-
-
-#for moment in gameEvents[0]["moments"]:
- #   for info in moment:
-  #      print(info)
-#    print("Quarter:" + str(moment[0]))
-#    print("")
-
-
-
-
-
-
-#for event in gameEvents:            #print each game event
- #   print(event)
-
+#End outermost for loop
 
 
 
