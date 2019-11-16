@@ -8,11 +8,12 @@ with open('0021500102.json') as jsonFile2:
 
 gameID = game1Data["gameid"]
 gameDate = game1Data["gamedate"]
-gameEvents = game1Data["events"]             #509 total game events
-homeTeam = gameEvents[0]["home"]["name"]
-homeTeamID = gameEvents[0]["home"]["teamid"]
-visitorTeam = gameEvents[0]["visitor"]["name"]
-visitorTeamID = gameEvents[0]["visitor"]["teamid"]
+game1Events = game1Data["events"]             #509 total game events
+game2Events = game2Data["events"]
+homeTeam = game1Events[0]["home"]["name"]
+homeTeamID = game1Events[0]["home"]["teamid"]
+visitorTeam = game1Events[0]["visitor"]["name"]
+visitorTeamID = game1Events[0]["visitor"]["teamid"]
 
 
 def getGameID(gameData):
@@ -23,26 +24,24 @@ def getGameDate(gameData):
     return gameData["gamedate"]
 
 
-def getGameEvents(gameData):
+def getAllGameEvents(gameData):
     return gameData["events"]
+
+
+#returns the event matching the ID, or -1 if event not found
+def getEventById(gameEvents, eventIDParam):
+    for event in gameEvents:
+        print(str(event["eventId"]))
+        if str(event["eventId"]) == str(eventIDParam):
+            return event
+    return -1
+
+
+
 
 
 def getEventHomePlayers(gameEvents, eventNum):
     return gameEvents[eventNum]["home"]["name"]
-
-
-def getPlayerLocations(playerID):
-    playerlocation = []
-    eventCount = 0
-
-    for event in gameEvents:
-        for moment in gameEvents[eventCount]["moments"]:
-            # Get the data of each player from the moment
-            for playerDataLine in moment[5]:
-                if playerDataLine[1] == playerID:
-                    playerlocation.append(playerDataLine)
-        eventCount += 1
-    return playerlocation
 
 
 
@@ -58,9 +57,13 @@ def test_getGameDate():
     assert getGameDate(game1Data) == "2015-11-09"
     assert getGameDate(game2Data) == "2015-11-09"
 
+def test_getAllGameEvents():
+    assert getAllGameEvents(game1Data) == game1Events
+    assert getAllGameEvents(game2Data) == game2Events
 
-
-
+def test_getEventById():
+    assert getEventById(game1Events, 600) == -1
+    assert getEventById(game1Events, 1) == game1Events[0]
 
 
 
