@@ -29,20 +29,47 @@ def getAllGameEvents(gameData):
 
 
 #returns the event matching the ID, or -1 if event not found
-def getEventById(gameEvents, eventIDParam):
+def getEventById(gameEvents, eventID):
     for event in gameEvents:
-        print(str(event["eventId"]))
-        if str(event["eventId"]) == str(eventIDParam):
+        if str(event["eventId"]) == str(eventID):
             return event
     return -1
 
 
 
+#returns the moments of the event with the specified ID. If the event could not be found, -1 returned
+def getEventMoments(gameEvents, eventID):
+    for event in gameEvents:
+        if str(event["eventId"]) == str(eventID):
+            return event["moments"]
+    return -1
 
 
+#return the home players for a specified event. If the event number is not valid, -1 is returned
 def getEventHomePlayers(gameEvents, eventNum):
-    return gameEvents[eventNum]["home"]["name"]
+    if getEventById(gameEvents, eventNum) != -1:
+        return gameEvents[eventNum - 1]["home"]["name"]
+    else:
+        return -1
 
+
+#returns the visitor players for a specified event. If the event number is not valid, -1 is returned
+def getEventVisitorPlayers(gameEvents, eventNum):
+    if getEventById(gameEvents, eventNum) != -1:
+        return gameEvents[eventNum - 1]["visitor"]["name"]
+    else:
+        return -1
+
+
+
+def getBallData(gameEvents):
+    allBallData = []
+    eventCount = 0
+
+    for event in gameEvents:
+        for moment in gameEvents[eventCount]["moments"]:
+            allBallData.append(moment[5][0])
+    return allBallData
 
 
 
@@ -65,7 +92,13 @@ def test_getEventById():
     assert getEventById(game1Events, 600) == -1
     assert getEventById(game1Events, 1) == game1Events[0]
 
+def test_getEventMoments():
+    assert getEventMoments(game1Events, 1) == game1Events[0]["moments"]
+    assert getEventMoments(game1Events, 5) == game1Events[4]["moments"]
+    assert getEventMoments(game2Events, 1) == game2Events[0]["moments"]
+    assert getEventMoments(game2Events, 600) == -1
 
-
-
-
+def test_getBallData():
+    assert len(getBallData(game1Events)) > 0
+    assert len(getBallData(game2Events)) > 0
+    assert getBallData(game1Events)[0] == [-1,-1,36.76206,20.81453,7.41527]
