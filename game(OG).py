@@ -29,6 +29,38 @@ class player:
     def __hash__(self):
         return hash(self.playerid)
 
+    def get_coordinates(self, game, current_quarter, start_t, end_t):
+        d = {}
+        theList = []
+
+        gameEvents = game.events
+        eventIndex = 0
+        momentIndex = 0
+        for event in gameEvents:
+            momentInfo = event.text
+            quarter = event.period
+            gameClock = event.gameclock
+            infoCount = 0
+            print("Moment Info: " + momentInfo)
+            print("Quarter: " + str(quarter))
+            print("Game Clock: " + str(gameClock))
+            """
+                        if quarter == current_quarter:
+                if start_t >= gameClock >= end_t:
+                    for info in momentInfo:
+                        if momentInfo[infoCount][1] == self.playerid:
+                            x = momentInfo[infoCount][2]
+                            y = momentInfo[infoCount][3]
+                            d = {"Quarter: ":quarter, "Game Clock: ": gameClock, "X: ": x, "Y: ": y}
+                            theList.append(d)
+                        infoCount += 1
+            """
+        return theList
+
+
+
+
+
 
 class team:
     def __init__(self, t, home):
@@ -235,6 +267,8 @@ class moment:
         return self.game.getevent(self.period, self.gameclock)
 
 
+
+
 def moment_details(game, index):
     m1 = game.moments[index]
     print("Game: " + str(m1.game))
@@ -243,15 +277,13 @@ def moment_details(game, index):
     print("Game Clock: " + str(m1.gameclock))
     print("Shot Clock: " + str(m1.shotclock))
     print("\n")
-    """
     print("Players Involved: ")
-    for p1 in m1.players:
-        print("Name: " + p1.name())
-        print("Player ID: " + p1.playerid)
-        print("Jersey: " + p1.jersey)
-        print("Position: " + p1.position)
-        print("\n")
+    print(m1.players)
     """
+    Trying to display playerid and pos seperately here 
+    """
+
+
 
 
 
@@ -259,10 +291,10 @@ def moment_details(game, index):
 
 def h_player_details(game, index):
     p1 = (game.home.players[index])
-    print(p1.name())
-    print(p1.playerid)
-    print(p1.jersey)
-    print(p1.position)
+    print("Name: " + p1.name())
+    print("Player ID: " + str(p1.playerid))
+    print("Jersey: " + str(p1.jersey))
+    print("Position: " + p1.position)
     print("\n")
 
 def h_team_details(game):
@@ -313,15 +345,15 @@ def event_details(game, index):
     print("Visitor: " + str(e1.visitor))
     print("Home: " + str(e1.home))
     print("\n")
-    """
-        print("Players Involved: ")
-        for p1 in e1.players:
-            print("Name: " + p1.name())
-            print("Player ID: " + p1.playerid)
-            print("Jersey: " + p1.jersey)
-            print("Position: " + p1.position)
-            print("\n")
-        """
+
+
+def player_details(p1):
+    print("Name: " + p1.name())
+    print("Player ID: " + p1.playerid)
+    print("Jersey: " + p1.jersey)
+    print("Position: " + p1.position)
+    print("\n")
+
 
 def get_All_Events(game):
     for e1 in game.events:
@@ -333,15 +365,7 @@ def get_All_Events(game):
         print("Visitor: " + str(e1.visitor))
         print("Home: " + str(e1.home))
         print("\n")
-        """
-                print("Players Involved: ")
-                for p1 in e1.players:
-                    print("Name: " + p1.name())
-                    print("Player ID: " + p1.playerid)
-                    print("Jersey: " + p1.jersey)
-                    print("Position: " + p1.position)
-                    print("\n")
-                """
+
 
 def convert(seconds):
     t = seconds
@@ -368,17 +392,20 @@ def main(argv):
 if __name__ == "__main__":
     main(sys.argv[1:])
     g1 = game("0021500423", True, True)
+    """
     h_team_details(g1)
     a_team_details(g1)
-
     h_player_details(g1, 5)
     a_player_details(g1, 5)
 
     moment_details(g1, 0)
 
-    event_details(g1, 0)
 
     get_All_Events(g1)
-
+    player_details(p1)
+    """
+    moment_details(g1, 0)
+    p1 = g1.home.players[0]
+    p1.get_coordinates(g1, 1, 720, 500)
 
 
