@@ -38,8 +38,8 @@ class player:
         for moment in momentlist:
             quarter = momentlist[momentCount].period  # Get Quarter
             gameClock = momentlist[momentCount].gameclock  # Get Game Clock
-            if momentlist[momentCount].period == current_quarter:
-                if start_t >= momentlist[momentCount].gameclock >= end_t:
+            if quarter == current_quarter:
+                if start_t >= gameClock >= end_t:
                     playerlist = momentlist[momentCount].players  # Initialize Players List
                     playerCount = 0
                     for player in playerlist:
@@ -370,6 +370,27 @@ def convert(seconds):
     print("Minutes: " + '%d' % minit)
     print("Seconds: " + '%d' % seconds)
 
+
+def get_ballcoordinates(game, current_quarter, start_t, end_t):
+    d = {}
+    theList = []
+
+    momentlist = g1.moments
+    momentCount = 0
+
+    for moment in momentlist:
+        quarter = momentlist[momentCount].period  # Get Quarter
+        gameClock = momentlist[momentCount].gameclock  # Get Game Clock
+        if quarter == current_quarter:
+            if start_t >= gameClock >= end_t:
+                x = momentlist[momentCount].ball[0] # Get Ball Coordinates
+                y = momentlist[momentCount].ball[1]
+                z = momentlist[momentCount].ball[2]
+                d = {"quarter": quarter, "gameclock": gameClock, "x": x, "y": y, "z": z}
+                theList.append(d)
+        momentCount += 1
+    return theList
+
 '''
 g1 = game("0021500423", True, True)
 print("MOMENT INFORMATION:")
@@ -403,7 +424,10 @@ def main(argv):
 if __name__ == "__main__":
     main(sys.argv[1:])
     g1 = game("0021500423", True, True)
-    p1 = g1.home.players[5]     # Kemba Walker
+    print("Ball Coordinates:")
+    print((get_ballcoordinates(g1, 1, 720, 500)), "\n")     # Ball Coordinates
+
+    p1 = g1.home.players[5]                         # Kemba Walker
     print(p1.firstname)
     print(p1.lastname)
     print(p1.playerid)
@@ -414,4 +438,15 @@ if __name__ == "__main__":
     if len(p1.get_coordinates(g1, 1, 720, 500)) == 0:
         print("An empty list occurs whenever a player is not on the court during the time specified in the get_coordinates function.")
 
+    print("\n")
 
+    p1 = g1.home.players[0]                         # Spencer Hawes
+    print(p1.firstname)
+    print(p1.lastname)
+    print(p1.playerid)
+    print(p1.jersey)
+    print(p1.position)
+    print(p1.get_coordinates(g1, 1, 720, 500))
+
+    if len(p1.get_coordinates(g1, 1, 720, 500)) == 0:
+        print("An empty list occurs whenever a player is not on the court during the time specified in the get_coordinates function.")
