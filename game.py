@@ -247,6 +247,126 @@ class game:
         return theListOfShots
 
 
+    def getJumpBalls(self):
+        '''
+        Get jump ball players, player information, and ball coordinates
+        Written by: Daryn Watt 11/2019
+        '''
+        keyword = "Jump ball"
+        jumpBallList = []
+        hometeamabb = self.home.teamname_abbrev
+        visitorteamabb = self.visitor.teamname_abbrev
+
+        for event in self.events:  # search all game events for jump balls
+            momentInfo = event.text
+            gameClock = event.gameclock
+
+            if keyword in momentInfo:  # look for keyword to designate a jump ball
+                quarter = event.period
+                beginsearch = gameClock
+                endsearch = gameClock - 3  # track ball coordinates for 3 seconds after jump ball time stamp
+
+                # Split event into 2 parts: players that face off, and player that gets possession
+                substringIndex = str(momentInfo).index('(')
+                vsPlayerStr = str(momentInfo)[:substringIndex]
+                possessionStr = str(momentInfo)[substringIndex:]
+
+                for players in self.home.players:
+                    name = players.firstname[0] + ". " + players.lastname
+
+                    if name in vsPlayerStr:
+                        homePlayer = players
+                        homePlayerName = players.firstname + " " + players.lastname
+
+                    if name in possessionStr:
+                        possPlayer = players
+                        possPlayerName = players.firstname + " " + players.lastname
+                        possPlayerTeamAbb = self.home.teamname_abbrev
+                # END HOME FOR LOOP
+
+                for players in self.visitor.players:
+                    name = players.firstname[0] + ". " + players.lastname
+
+                    if name in vsPlayerStr:
+                        visitorPlayer = players
+                        visitorPlayerName = players.firstname + " " + players.lastname
+
+                    if name in possessionStr:
+                        possPlayer = players
+                        possPlayerName = players.firstname + " " + players.lastname
+                        possPlayerTeamAbb = self.visitor.teamname_abbrev
+                # END VISITOR FOR LOOP
+
+                jumpBallDict = {"homePlayer": homePlayerName, "homePlayerId": homePlayer.playerid,
+                                "homeTeam": hometeamabb,
+                                "visitorPlayer": visitorPlayerName, "visitorPlayerId": visitorPlayer.playerid,
+                                "visitorTeam": visitorteamabb, "possessionPlayer": possPlayerName,
+                                "possessionPlayerId": possPlayer.playerid, "possessionTeam": possPlayerTeamAbb,
+                                "quarter": quarter, "begin": beginsearch, "end": endsearch}
+
+                jumpBallList.append(jumpBallDict)  # Adds Each General jump ball Information To The List.
+        # END GAME EVENTS FOR LOOP
+
+        ballCoordinates = []  # Initialize List Of Coordinates For Each Shot.
+        returnList = []  # Initialize List Of jump balls.
+        maxZ = 0.0
+
+        for entry in jumpBallList:  # For each jump ball that occurred
+            homePlayerName = entry["homePlayer"]
+            visitorPlayerName = entry["visitorPlayer"]
+            possPlayerName = entry["possessionPlayer"]
+
+            homePlayerId = entry["homePlayerId"]
+            visitorPlayerId = entry["visitorPlayerId"]
+            possPlayerId = entry["possessionPlayerId"]
+
+            homePlayerTeam = entry["homeTeam"]
+            visitorPlayerTeam = entry["visitorTeam"]
+            possPlayerTeam = entry["possessionTeam"]
+
+            beginsearch = entry["begin"]
+            endsearch = entry["end"]
+            shotquarter = entry["quarter"]
+
+            for m in self.moments:
+                currentQuarter = m.period
+                gameClock = m.gameclock
+
+                if currentQuarter == shotquarter:  # If jump ball occurred in loop's current quarter
+                    if beginsearch >= gameClock >= endsearch:  # Look For Time Shot Occurred.
+                        if m.ball is not None:  # Make Sure The Ball Coordinates Are Not Missing.
+                            x = m.ball[0]  # Get Ball Coordinates
+                            y = m.ball[1]
+                            z = m.ball[2]
+
+                            if z > maxZ:
+                                maxZ = z
+
+                            coordinate = {"gameclock": gameClock, "x": x, "y": y, "z": z}
+                            ballCoordinates.append(coordinate)  # Store Ball Coordinates For That Moment In List.
+
+            shotDict = {"homePlayer": homePlayerName, "homePlayerId": homePlayerId, "homeTeam": homePlayerTeam,
+                        "visitorPlayer": visitorPlayerName, "visitorPlayerId": visitorPlayerId,
+                        "visitorTeam": visitorPlayerTeam,
+                        "possessionPlayer": possPlayerName, "possessionPlayerId": possPlayerId,
+                        "possessionTeam": possPlayerTeam, "quarter": shotquarter, "time": beginsearch,
+                        "maxHeight": maxZ, "coordinates": ballCoordinates}
+
+            returnList.append(shotDict)  # Store All jump ball Information In The List.
+
+            ballCoordinates = []    # Resets The Coordinates List For The Next jump ball.
+            shotDict = {}           # Resets The Information Dictionary For The next jump ball.
+            maxZ = 0
+        # END JUMP BALL LIST LOOP
+        return returnList
+# END JUMP BALLS
+
+
+
+
+
+
+
 class moment:
     def __init__(self, game_parent, m):
         self.game = game_parent
@@ -491,7 +611,8 @@ def main(argv):
 if __name__ == "__main__":
     main(sys.argv[1:])
     g1 = game("0021500423", True, True)
-    print(g1.getShots())
+    #print(g1.getShots())
+    print(g1.getJumpBalls())            # PRINTS THE JUMP BALLS
 
     '''
     print("Ball Coordinates:")
