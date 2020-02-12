@@ -219,31 +219,54 @@ class game:
 
         gameEvents = self.events
         for event in gameEvents:
+            assistFlag = False
+            blockFlag = False
             momentInfo = event.text
             quarter = event.period
             gameClock = event.gameclock
 
-            if (
-                    keyword1 in event.text or keyword2 in event.text) and keyword3 in event.text:  # Look For Keywords To Find Shots.
+            if (keyword1 in event.text or keyword2 in event.text) and keyword3 in event.text:  # Look For Keywords To Find Shots.
                 shotquarter = event.period
                 beginsearch = gameClock + 5  # Begin Searching For The Start Of The Shot Five Seconds Before.
-                endsearch = gameClock
+                endsearch = gameClock - 1
                 if keyword1 in event.text:
                     outcome = "Made"
                 if keyword2 in event.text:
                     outcome = "Missed"
                 playerCount = 0
                 for players in self.players:  # Loop Through List Of Players To Determine Who Took The Shot.
-                    if playerCount > 12:  # Maximum of 13 Players Per Team.
+                    if playerCount >= len(self.home.players) or playerCount >= len(self.visitor.players):  # Maximum of 13 Players Per Team.
                         break
-                    firstLetter = self.home.players[playerCount].firstname[
-                        0]  # Compare First Initial And Last Name In PLay-By-Play.
+                    firstLetter = self.home.players[playerCount].firstname[0]  # Compare First Initial And Last Name In PLay-By-Play.
                     firstInitial = firstLetter + "."
                     lastname = self.home.players[playerCount].lastname
                     name = firstInitial + " " + lastname
                     if name in event.text:
-                        shooter = self.home.players[playerCount]
-                        teamabb = self.home.teamname_abbrev
+                        nloc = event.text.find(name)
+                        if "assist" in event.text:
+                            aloc = event.text.find("assist")
+                            assistFlag = True
+                            if nloc < aloc:
+                                shooter = self.home.players[playerCount]
+                                teamabb = self.home.teamname_abbrev
+                                shooterIndex = playerCount
+                            else:
+                                assister = self.home.players[playerCount]
+                                assisterIndex = playerCount
+                        elif "block" in event.text:
+                            bloc = event.text.find("block")
+                            blockFlag = True
+                            if nloc < bloc:
+                                shooter = self.home.players[playerCount]
+                                teamabb = self.home.teamname_abbrev
+                                shooterIndex = playerCount
+                            else:
+                                blocker = self.home.players[playerCount]
+                                blockerIndex = playerCount
+                        else:
+                            shooter = self.home.players[playerCount]
+                            teamabb = self.home.teamname_abbrev
+                            shooterIndex = playerCount
 
                     firstLetter = self.visitor.players[playerCount].firstname[
                         0]  # Compare First Initial And Last Name In PLay-By-Play.
@@ -251,15 +274,55 @@ class game:
                     lastname = self.visitor.players[playerCount].lastname
                     name = firstInitial + " " + lastname
                     if name in event.text:
-                        shooter = self.visitor.players[playerCount]
-                        teamabb = self.visitor.teamname_abbrev
+                        nloc = event.text.find(name)
+                        if "assist" in event.text:
+                            aloc = event.text.find("assist")
+                            assistFlag = True
+                            if nloc < aloc:
+                                shooter = self.visitor.players[playerCount]
+                                teamabb = self.visitor.teamname_abbrev
+                                shooterIndex = playerCount
+                            else:
+                                assister = self.visitor.players[playerCount]
+                                assisterIndex = playerCount
+                        elif "block" in event.text:
+                            bloc = event.text.find("block")
+                            blockFlag = True
+                            if nloc < bloc:
+                                shooter = self.visitor.players[playerCount]
+                                teamabb = self.visitor.teamname_abbrev
+                                shooterIndex = playerCount
+                            else:
+                                blocker = self.visitor.players[playerCount]
+                                blockerIndex = playerCount
+                        else:
+                            shooter = self.visitor.players[playerCount]
+                            teamabb = self.visitor.teamname_abbrev
+                            shooterIndex = playerCount
                     playerCount += 1
-                playername = shooter.firstname + " " + shooter.lastname
-                playerid = shooter.playerid
-                d = {"player": playername, "id": playerid, "team": teamabb, "quarter": shotquarter,
-                     # Stores General Shot Information
-                     "begin": beginsearch, "end": endsearch, "outcome": outcome}
-                theList.append(d)  # Adds Each General Shot Information To The List.
+
+                #SPlayername = shooter.firstname + " " + shooter.lastname
+                #SPlayerid = shooter.playerid
+                #print("THE SHOOTER: ", SPlayername)
+                if assistFlag:
+                    SPlayername = shooter.firstname + " " + shooter.lastname
+                    SPlayerid = shooter.playerid
+                    APlayername = assister.firstname + " " + assister.lastname
+                    APlayerid = assister.playerid
+                    d = {"player": SPlayername, "id": SPlayerid, "shooterindex": shooterIndex, "team": teamabb, "quarter": shotquarter, "begin": beginsearch, "end": endsearch, "outcome": outcome, "assist": APlayername, "assistid": APlayerid, "assisterindex": assisterIndex}
+                    theList.append(d)  # Adds Each General Shot Information To The List.
+                elif blockFlag:
+                    SPlayername = shooter.firstname + " " + shooter.lastname
+                    SPlayerid = shooter.playerid
+                    BPlayername = blocker.firstname + " " + blocker.lastname
+                    BPlayerid = blocker.playerid
+                    d = {"player": SPlayername, "id": SPlayerid, "shooterindex": shooterIndex, "team": teamabb, "quarter": shotquarter, "begin": beginsearch, "end": endsearch, "outcome": outcome, "block": BPlayername, "blockid": BPlayerid, "blockerindex": blockerIndex}
+                    theList.append(d)  # Adds Each General Shot Information To The List.
+                else:
+                    SPlayername = shooter.firstname + " " + shooter.lastname
+                    SPlayerid = shooter.playerid
+                    d = {"player": SPlayername, "id": SPlayerid, "shooterindex": shooterIndex, "team": teamabb, "quarter": shotquarter, "begin": beginsearch, "end": endsearch, "outcome": outcome}
+                    theList.append(d)  # Adds Each General Shot Information To The List.
         return theList
 
 
@@ -516,11 +579,24 @@ class game:
                 gameClock = momentlist[momentCount].gameclock  # Get Game Clock
                 playername = theList[listCount]["player"]  # Get Shot Information
                 playerid = theList[listCount]["id"]
+                shooterindex = theList[listCount]["shooterindex"]
                 shotquarter = theList[listCount]["quarter"]
                 beginsearch = theList[listCount]["begin"]
                 endsearch = theList[listCount]["end"]
                 outcome = theList[listCount]["outcome"]
                 teamabb = theList[listCount]["team"]
+                if "assist" in theList[listCount]:
+                    assist = theList[listCount]["assist"]
+                    assistid = theList[listCount]["assistid"]
+                    assistindex = theList[listCount]["assisterindex"]
+                else:
+                    assistid = 0
+                if "block" in theList[listCount]:
+                    block = theList[listCount]["block"]
+                    blockid = theList[listCount]["blockid"]
+                    blockindex = theList[listCount]["blockerindex"]
+                else:
+                    blockid = 0
                 if quarter == shotquarter:  # Look For Quarter Shot Occurred.
                     if beginsearch >= gameClock >= endsearch:  # Look For Time Shot Occurred.
                         if momentlist[momentCount].ball != None:  # Check To Make Sure The Ball Coordinates Are Not Missing.
@@ -539,7 +615,10 @@ class game:
                                             if momentlist[counter-1].ball[2] < momentlist[counter].ball[2]:
                                                 counter -= 1
                                             if momentlist[counter-1].ball[2] >= momentlist[counter].ball[2]:
+                                                #shotStartMoment = counter
+                                                #print("Starting Moment = ", shotStartMoment)
                                                 break
+
                                     while counter < rimHeightDiscoveredMoment:
                                         if momentlist[counter].ball == None:
                                             counter += 1
@@ -559,13 +638,105 @@ class game:
                             if momentlist[momentCount].ball[2] < 10 and isShotDiscovered:
                                 break
                 momentCount += 1
-            shotDict = {"playername": playername, "playerid": playerid, "team": teamabb, "quarter": shotquarter, "time": endsearch, "result": outcome, "coordinates": shotCoordinates}
+
+            #shotAlreadyFound = False
+            #i = 0
+            #while i < len(theListOfShots):
+                #print(theListOfShots[i])
+                #if len(shotCoordinates) != 0 and len(theListOfShots[i]) != 0:
+                    #try:
+                        #test = theListOfShots[i]["coordinates"][0]["x"]
+                    #except KeyError:
+                        #i += 1
+                        #continue
+                    #if shotCoordinates[0]["x"] == theListOfShots[i]["coordinates"][0]["x"]:
+                        #if shotCoordinates[0]["y"] == theListOfShots[i]["coordinates"][0]["y"]:
+                            #shotAlreadyFound = True
+                            #break
+                #i += 1
+
+            #if not shotAlreadyFound:
+            if outcome == "Missed" and len(shotCoordinates) > 0:
+                airBall = self.detectAirBall(shotCoordinates)
+            else:
+                airBall = False
+
+            if assistid != 0:
+                shotDict = {"playername": playername, "playerid": playerid, "team": teamabb, "quarter": shotquarter, "time": endsearch, "result": outcome, "airball": airBall, "assist": assist, "assistid": assistid, "coordinates": shotCoordinates}
+            if blockid != 0:
+                shotDict = {"playername": playername, "playerid": playerid, "team": teamabb, "quarter": shotquarter, "time": endsearch, "result": outcome, "block": block, "blockid": blockid}
+            if assistid == 0 and blockid == 0:
+                shotDict = {"playername": playername, "playerid": playerid, "team": teamabb, "quarter": shotquarter, "time": endsearch, "result": outcome, "airball": airBall, "coordinates": shotCoordinates}
             theListOfShots.append(shotDict)  # Store All Shot Information In The List.
             shotCoordinates = []  # Resets The Coordinates List For The Next Shot.
             shotDict = {}  # Resets The Shot Information Dictionary For The Next Shot.
             listCount += 1
+            # momentCount += 1
             momentCount = 0
         return theListOfShots
+
+    def detectAirBall(self, coordinates):
+        isAirBall = False
+        xIncreasing = False
+        xDecreasing = False
+        yIncreasing = False
+        yDecreasing = False
+        strike = 0
+        strikeout = 3
+        upIndex = 1
+        length = len(coordinates)
+        maxHeightIndex = 0
+        while upIndex < length:      # Search For Maximum Height
+            if coordinates[upIndex]["z"] < coordinates[upIndex - 1]["z"]:
+                maxHeightIndex = upIndex
+
+                if coordinates[upIndex]["x"] < coordinates[upIndex - 1]["x"]:
+                    xDecreasing = True
+                else:
+                    xIncreasing = True
+
+                if coordinates[upIndex]["y"] < coordinates[upIndex - 1]["y"]:
+                    yDecreasing = True
+                else:
+                    yIncreasing = True
+                break
+            else:
+                upIndex += 1
+
+        downIndex = maxHeightIndex
+
+        while downIndex < length:
+            if coordinates[downIndex]["z"] > coordinates[downIndex - 1]["z"]:
+                strike += 1
+                if strike == strikeout:
+                    return isAirBall
+
+            if xDecreasing:
+                if coordinates[downIndex]["x"] > coordinates[downIndex - 1]["x"]:
+                    strike += 1
+                    if strike == strikeout:
+                        return isAirBall
+            if xIncreasing:
+                if coordinates[downIndex]["x"] < coordinates[downIndex - 1]["x"]:
+                    strike += 1
+                    if strike == strikeout:
+                        return isAirBall
+            if yDecreasing:
+                if coordinates[downIndex]["y"] > coordinates[downIndex - 1]["y"]:
+                    strike += 1
+                    if strike == strikeout:
+                        return isAirBall
+            if yIncreasing:
+                if coordinates[downIndex]["y"] < coordinates[downIndex - 1]["y"]:
+                    strike += 1
+                    if strike == strikeout:
+                        return isAirBall
+
+            downIndex += 1
+
+        isAirBall = True
+
+        return isAirBall
 
 
     def getJumpBalls(self):
@@ -1183,12 +1354,13 @@ if __name__ == "__main__":
     """
 
     shotlist = g1.get_list_of_shots()
+
     shots = g1.getShots(shotlist)
     for shot in shots:
         print(shot)
     #print(g1.getJumpBalls())                                    # Displays all jumpballs in g1
-    display_shot(g1, 0)                                         # Displays shot # 0 in g1    (X Y Z Coordinates)
-    display_shot_XY(g1, 0)                                      # Displays shot # 0 in g1    (X Y Coordinates)
+    #display_shot(g1, 0)                                         # Displays shot # 0 in g1    (X Y Z Coordinates)
+    #display_shot_XY(g1, 0)                                      # Displays shot # 0 in g1    (X Y Coordinates)
 
     count = 0
     while(count < len(shots)):
