@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js">
+
+    $.ajax({
+        type: "Get",
+        url: "http://localhost:8080/GameFiles/TestFiles/27.json",
+        dataType: "json",
+        success: function(data) {
+            data = JSON.parse(data);
+            console.log(data);
+        },
+        error: function(){
+            console.log("Not found");
+        }
+    });
+
+    /*
+    var xmlhttp = new XMLHttpRequest();
+    var url = "GameFiles";
+
+    xmlhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+            console.log(data);
+        }
+    };
+    xmlhttp.open("GET", url, true);
+    xmlhttp.send();
+    */
+    function myFunction(data) {
+        var gameID = data[0].gameid;
+        var gamedate = data[0].gamedate;
+        var homename = data[0].events[0].home.name
+        var visname = data[0].events[0].visitor.name
+        var visplayers = JSON.stringify(data[0].events[0].visitor.players)
+        var name = JSON.stringify(data[0].events[0].visitor.players[0].firstname + " " + data[0].events[0].visitor.players[0].lastname)
+        var jersey = JSON.stringify(data[0].events[0].visitor.players[0].jersey)
+
+
+
+        document.getElementById("gameid").innerHTML = gameID;
+        document.getElementById("gamedate").innerHTML = gamedate;
+        document.getElementById("homename").innerHTML = homename;
+        document.getElementById("visname").innerHTML = visname;
+        document.getElementById("visplayers").innerHTML = visplayers;
+        document.getElementById("playera").innerHTML = name
+        document.getElementById("jersey").innerHTML = jersey
+    }
+</script>
+<table border="5">
+    <tr>
+        <th> Game Id </th>
+        <th> Game Date </th>
+        <th> Home Team </th>
+        <th> Visitor Team</th>
+    </tr>
+    <tr>
+        <td id="gameid"></td>
+        <td id="gamedate"> </td>
+        <td id="homename"> </td>
+        <td id="visname"> </td>
+    </tr>
+</table>
+<div id="visplayers"></div>
+</body>
+</html>
