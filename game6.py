@@ -146,7 +146,7 @@ class game:
 
         if moments:
             #with open("C:\\Users\\kff50\\Documents\\Senior Year\\CMPSC 484\\Basketball Project\\nba_sportvu\\" + str(gameid) + ".json") as f:
-            with open('0021500420.json') as f:
+            with open('0021500025.json') as f:
                 jsonf = json.load(f)
                 self.gamedate = datetime.datetime.strptime(jsonf['gamedate'], '%Y-%m-%d')
                 self.visitor = team(jsonf['events'][0]['visitor'], False)
@@ -165,7 +165,7 @@ class game:
 
         if pbp:
             #with open("C:\\Users\\kff50\\Documents\\Senior Year\\CMPSC 484\\Basketball Project\\pbp\\2015.12.23.BOS.at.CHO.0021500423.csv") as f:
-            with open('2015.12.22.DET.at.MIA.0021500420.csv') as f:
+            with open('2015.10.30.CHI.at.DET.0021500025.csv') as f:
                 reader = csv.DictReader(f)
                 for line in reader:
                     self.events.append(event(line))
@@ -912,7 +912,158 @@ class game:
 
     def getPasses(self):
         momentlist = self.moments
+        playerCount = 0
         momentCount = 0
+        homePlayers = self.home.players
+        visitorPlayers = self.visitor.players
+        homePlayerIDs = []
+        visitorPlayerIDs = []
+        theListOfPasses = []
+
+        while playerCount < len(homePlayers):
+            homePlayerIDs.append(homePlayers[playerCount].playerid)
+            playerCount += 1
+        while playerCount < len(visitorPlayers):
+            visitorPlayerIDs.append(visitorPlayers[playerCount].playerid)
+            playerCount += 1
+
+        while momentCount < len(momentlist):
+            if momentCount == len(momentlist) - 1:
+                return theListOfPasses
+            SamePlayerFoundAfterPass = False
+            NewPlayerBeforePass = False
+            OpponentPlayerFoundAfterPass = False
+            if momentlist[momentCount].ball is None or momentlist[momentCount].players == [] or momentlist[momentCount + 1].ball is None or momentlist[momentCount + 1].players == []:
+                momentCount += 1
+                continue
+            else:
+                player = momentlist[momentCount].getPossession()
+                if player is None:
+                    momentCount += 1
+                    continue
+                if momentlist[momentCount].shotclock is None or momentlist[momentCount] is not None or momentlist[momentCount].shotclock <= 22:
+                    FiveConsecutiveBefore = True
+                    for i in range(momentCount, momentCount + 5):
+                        if i == len(momentlist) - 1:
+                            return theListOfPasses
+                        currplayer = momentlist[i].getPossession()
+                        if currplayer is None:
+                            FiveConsecutiveBefore = False
+                            break
+                        if currplayer.playerid == player.playerid:
+                            startplayer = player
+                        else:
+                            FiveConsecutiveBefore = False
+                            break
+                    if not FiveConsecutiveBefore:
+                        momentCount += 1
+                        continue
+                    else:
+                        beforepasscounter = momentCount
+                        while beforepasscounter < len(momentlist):
+                            if beforepasscounter == len(momentlist) - 1:
+                                return theListOfPasses
+                            nextplayer = momentlist[beforepasscounter + 1].getPossession()
+                            if nextplayer is None:
+                                startMomentPass = beforepasscounter
+                                break
+                            elif nextplayer.playerid == startplayer.playerid:
+                                beforepasscounter += 1
+                                continue
+                            else:
+                                NewPlayerBeforePass = True
+                                break
+                        if NewPlayerBeforePass:
+                            momentCount += 1
+                            continue
+                        else:
+                            passcounter = startMomentPass
+                            while passcounter < len(momentlist):
+                                if passcounter == len(momentlist) - 1:
+                                    return theListOfPasses
+                                nextplayer = momentlist[passcounter + 1].getPossession()
+                                if nextplayer is None:
+                                    passcounter += 1
+                                    continue
+                                elif nextplayer.playerid == startplayer.playerid:
+                                    SamePlayerFoundAfterPass = True
+                                    break
+                                elif nextplayer.playerid != startplayer.playerid and nextplayer.teamid != startplayer.teamid:
+                                    OpponentPlayerFoundAfterPass = True
+                                    break
+                                else:
+                                    FiveConsecutiveAfter = True
+                                    for i in range(passcounter + 1, passcounter + 6):
+                                        if i == len(momentlist) - 1:
+                                            return theListOfPasses
+                                        currplayer = momentlist[i].getPossession()
+                                        if currplayer is None:
+                                            FiveConsecutiveAfter = False
+                                            break
+                                        if currplayer.playerid == nextplayer.playerid:
+                                            startplayer = player
+                                        else:
+                                            FiveConsecutiveAfter = False
+                                            break
+                                    if not FiveConsecutiveAfter:
+                                        break
+                                    endMomentPass = passcounter + 1
+                                    break
+                            if SamePlayerFoundAfterPass or OpponentPlayerFoundAfterPass or not FiveConsecutiveAfter:
+                                momentCount = passcounter
+                                continue
+                            else:
+                                passCoordinates = []
+                                passer = momentlist[startMomentPass].getPossession()
+                                receiver = momentlist[endMomentPass].getPossession()
+                                for i in range(startMomentPass, endMomentPass):
+                                    quarter = momentlist[i].period
+                                    gameClock = momentlist[i].gameclock
+                                    if momentlist[i].ball is None:
+                                        pass
+                                    else:
+                                        x = momentlist[i].ball[0]  # Get Ball Coordinates
+                                        y = momentlist[i].ball[1]
+                                        z = momentlist[i].ball[2]
+                                        coordinate = {"quarter": quarter, "gameclock": gameClock, "x": x, "y": y, "z": z}
+                                        passCoordinates.append(coordinate)
+                                if len(passCoordinates) == 0:
+                                    passDict = {}
+                                    theListOfPasses.append(passDict)
+                                    EmptyPass = True
+                                else:
+                                    passername = passer.firstname + " " + passer.lastname
+                                    passerid = passer.playerid
+                                    receivername = receiver.firstname + " " + receiver.lastname
+                                    receiverid = receiver.playerid
+                                    teamid = passer.teamid
+                                    if self.home.teamid == teamid:
+                                        teamabb = self.home.teamname_abbrev
+                                    else:
+                                        teamabb = self.visitor.teamname_abbrev
+                                    quarter = passCoordinates[0]["quarter"]
+                                    starttime = passCoordinates[0]["gameclock"]
+                                    clock = convert(int(starttime))
+                                    passDict = {"passername": passername, "passerid": passerid, "receivername": receivername, "receiverid": receiverid, "team": teamabb, "quarter": quarter, "time": clock, "coordinates": passCoordinates}
+                                    #print(passDict)
+                                    theListOfPasses.append(passDict)
+                                    passDict = {}
+                                    passCoordinates = []
+                                    PassCompleted = True
+                        if PassCompleted:
+                            momentCount = endMomentPass
+                            continue
+                        if EmptyPass:
+                            momentCount = endMomentPass
+                            continue
+                else:
+                    momentCount += 1
+                    continue
+        return theListOfPasses
+
+
+
+
 
 
 class moment:
@@ -1462,7 +1613,7 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv[1:])
-    g1 = game("0021500420", True, True)
+    g1 = game("0021500025", True, True)
     """
     m1 = g1.moments
     p1 = g1.home.players[5]                                     # Creates a Kemba Walker player object (g1, player index: 5)
@@ -1499,6 +1650,7 @@ if __name__ == "__main__":
         momentCount += 1
     '''
 
+    '''
     while momentCount < len(momentlist):
         if momentlist[momentCount].ball is None or momentlist[momentCount].players == []:
             momentCount += 1
@@ -1519,6 +1671,12 @@ if __name__ == "__main__":
                 else:
                     print(momentCount, time, gameclock, shotclock, team.teamname_abbrev)
         momentCount += 1
+    '''
+
+    passes = g1.getPasses()
+
+    for p in passes:
+        print(p)
 
     '''
     eventlist = g1.events
