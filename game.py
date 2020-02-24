@@ -1,15 +1,15 @@
 import json
-import os
 import csv
 import datetime
 import sys
 import code
-import mpld3 as mpl
+import math
 
 import seaborn as sns
 import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
+
+import os
 
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -143,8 +143,7 @@ class game:
         self.events = []
 
         if moments:
-            with open("C:\\Users\\kff50\\Documents\\Senior Year\\CMPSC 484\\Basketball Project\\nba_sportvu\\" + str(gameid) + ".json") as f:
-            #with open('0021500423.json') as f:
+            with open('./sportvu/' + gameid + '.json', 'r') as f:
                 jsonf = json.load(f)
                 self.gamedate = datetime.datetime.strptime(jsonf['gamedate'], '%Y-%m-%d')
                 self.visitor = team(jsonf['events'][0]['visitor'], False)
@@ -162,8 +161,8 @@ class game:
                 self.moments = sorted(list(set(self.moments)), reverse=True)
 
         if pbp:
-            with open("C:\\Users\\kff50\\Documents\\Senior Year\\CMPSC 484\\Basketball Project\\pbp\\2015.12.23.BOS.at.CHO.0021500423.csv") as f:
-            #with open('2015.12.23.BOS.at.CHO.0021500423.csv') as f:
+            pbppath = './pbp/' + [f for f in os.listdir('./pbp') if gameid in f][0]
+            with open(pbppath, 'r') as f:
                 reader = csv.DictReader(f)
                 for line in reader:
                     self.events.append(event(line))
@@ -462,25 +461,28 @@ class game:
         '''
         Get jump ball players, player information, and ball coordinates
         Written by: Daryn Watt 11/2019
+        Updated: 2/2020
         '''
         keyword = "Jump ball"
         jumpBallList = []
-        hometeamabb = self.home.teamname_abbrev
-        visitorteamabb = self.visitor.teamname_abbrev
 
         for event in self.events:  # search all game events for jump balls
             momentInfo = event.text
             gameClock = event.gameclock
 
-            if keyword in momentInfo:  # look for keyword to designate a jump ball
+            if keyword in momentInfo:           # look for keyword to designate a jump ball
                 quarter = event.period
-                beginsearch = gameClock
-                endsearch = gameClock - 3  # track ball coordinates for 3 seconds after jump ball time stamp
+                beginsearch = gameClock + 1.5
+                endsearch = gameClock - 1
 
                 # Split event into 2 parts: players that face off, and player that gets possession
-                substringIndex = str(momentInfo).index('(')
-                vsPlayerStr = str(momentInfo)[:substringIndex]
-                possessionStr = str(momentInfo)[substringIndex:]
+                if '(' in momentInfo:
+                    substringIndex = str(momentInfo).index('(')
+                    vsPlayerStr = str(momentInfo)[:substringIndex]
+                    possessionStr = str(momentInfo)[substringIndex:]
+                else:
+                    vsPlayerStr = momentInfo
+                    possessionStr = ""
 
                 for players in self.home.players:
                     name = players.firstname[0] + ". " + players.lastname
@@ -509,9 +511,9 @@ class game:
                 # END VISITOR FOR LOOP
 
                 jumpBallDict = {"homePlayer": homePlayerName, "homePlayerId": homePlayer.playerid,
-                                "homeTeam": hometeamabb,
+                                "homeTeam": self.home.teamname_abbrev,
                                 "visitorPlayer": visitorPlayerName, "visitorPlayerId": visitorPlayer.playerid,
-                                "visitorTeam": visitorteamabb, "possessionPlayer": possPlayerName,
+                                "visitorTeam": self.visitor.teamname_abbrev, "possessionPlayer": possPlayerName,
                                 "possessionPlayerId": possPlayer.playerid, "possessionTeam": possPlayerTeamAbb,
                                 "quarter": quarter, "begin": beginsearch, "end": endsearch}
 
@@ -519,8 +521,9 @@ class game:
         # END GAME EVENTS FOR LOOP
 
         ballCoordinates = []  # Initialize List Of Coordinates For Each Shot.
-        returnList = []  # Initialize List Of jump balls.
+        returnList = []     # Initialize List Of jump balls.
         maxZ = 0.0
+
 
         for entry in jumpBallList:  # For each jump ball that occurred
             homePlayerName = entry["homePlayer"]
@@ -543,18 +546,29 @@ class game:
                 currentQuarter = m.period
                 gameClock = m.gameclock
 
-                if currentQuarter == shotquarter:  # If jump ball occurred in loop's current quarter
-                    if beginsearch >= gameClock >= endsearch:  # Look For Time Shot Occurred.
-                        if m.ball is not None:  # Make Sure The Ball Coordinates Are Not Missing.
-                            x = m.ball[0]  # Get Ball Coordinates
-                            y = m.ball[1]
-                            z = m.ball[2]
+                if currentQuarter == shotquarter:               # If jump ball occurred in loop's current quarter
+                    if beginsearch >= gameClock >= endsearch:   # Look For Time Shot Occurred.
+                        if m.ball is not None:                  # Make Sure The Ball Coordinates Are Not Missing.
+                            coordinate = {"gameclock": gameClock, "x": m.ball[0], "y": m.ball[1], "z": m.ball[2]}
 
-                            if z > maxZ:
-                                maxZ = z
+                            if jumpBallList.index(entry) == 0:            # IF FIRST ENTRY - SHOULD BE 47,25
+                                if abs(coordinate['x'] - 47) < 1.5 and abs(coordinate['y'] - 25) < 1.5 and coordinate['z'] >= 7:
+                                    ballCoordinates.append(coordinate)
 
-                            coordinate = {"gameclock": gameClock, "x": x, "y": y, "z": z}
-                            ballCoordinates.append(coordinate)  # Store Ball Coordinates For That Moment In List.
+                                    if m.ball[2] > maxZ:
+                                        maxZ = m.ball[2]
+
+                            else:    # ELSE: SHOULD BE 15, 25 OR 79,25
+                                if (abs(coordinate['x'] - 15) < 1.5 or abs(coordinate['x'] - 79) < 1.5) \
+                                        and abs(coordinate['y'] - 25) < 1.5 and coordinate['z'] >= 7:
+                                    ballCoordinates.append(coordinate)  # Store Ball Coordinates For That Moment In List
+
+                                    if m.ball[2] > maxZ:
+                                        maxZ = m.ball[2]
+
+            for coord in ballCoordinates:
+                if coord['z'] == maxZ:
+                    ballCoordinates = ballCoordinates[:ballCoordinates.index(coord)]
 
             shotDict = {"homePlayer": homePlayerName, "homePlayerId": homePlayerId, "homeTeam": homePlayerTeam,
                         "visitorPlayer": visitorPlayerName, "visitorPlayerId": visitorPlayerId,
@@ -565,15 +579,42 @@ class game:
 
             returnList.append(shotDict)  # Store All jump ball Information In The List.
 
-            ballCoordinates = []  # Resets The Coordinates List For The Next jump ball.
-            shotDict = {}  # Resets The Information Dictionary For The next jump ball.
+            ballCoordinates = []        # Resets The Coordinates List For The Next jump ball.
+            shotDict = {}               # Resets The Information Dictionary For The next jump ball.
             maxZ = 0
+            maxCoordIndex = 0
         # END JUMP BALL LIST LOOP
         return returnList
-    # END JUMP BALLS
+    # END GET JUMP BALLS
+
+    def getJumpballAngle(self, coordList, maxHeight):
+        '''
+            Returns the angle of the jump ball at peak height. If the coordList is empty, returns 0
+            param coordList: full list of collected jump ball coordinates
+            Written by: Daryn Watt 1/2020
+        '''
+        prevHeight = 0
+        angleCoord = []
+
+        for coord in coordList:
+            if coord['z'] >= prevHeight:   # find where ball is in free motion
+                angleCoord.append(coord)
+                prevHeight = coord['z']
+            elif len(angleCoord) != 0 and angleCoord[-1]['z'] != maxHeight:
+                prevHeight = coord['z']
+        print("Angle Coordinates: ", angleCoord)
+
+        if len(angleCoord) == 0:
+            return 0
+        else:
+            radians = math.atan2(angleCoord[-1]['z'] - angleCoord[0]['z'],
+                                 angleCoord[-1]['x'] - angleCoord[0]['x'])
+            angle = math.degrees(radians)
+            return angle
 
 
 class moment:
+
     def __init__(self, game_parent, m):
         self.game = game_parent
         self.period = m[0]  # int
@@ -1053,8 +1094,16 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv[1:])
-    g1 = game("0021500423", True, True)
-    """
+
+    for filename in os.listdir("./sportvu/"):
+        newGame = game(filename[:-5], True, True)
+        newGameJB = newGame.getJumpBalls()
+        for jb in newGameJB:
+            print(filename + " ", newGame.getJumpballAngle(jb['coordinates'], jb['maxHeight']), "\n")
+
+
+
+    """ 
     m1 = g1.moments
     p1 = g1.home.players[5]                                     # Creates a Kemba Walker player object (g1, player index: 5)
     start_t = 720
@@ -1070,11 +1119,11 @@ if __name__ == "__main__":
     print(get_All_Events(g1))                                   # Prints all events for g1
     moment_details(g1, 500)                                     # Prints the 500th moment in g1
     print(get_all_moments(g1))                                  # Prints all moments for g1
-    """
-    print(g1.getJumpBalls())                                    # Displays all jumpballs in g1
-    display_shot(g1, 4)                                         # Displays shot # 4 in g1    (X Y Z Coordinates)
-    display_shot_XY(g1, 4)                                      # Displays shot # 4 in g1    (X Y Coordinates)
-    """
+    print(g1.get_list_of_shots())
+  
+     display_shot(g1, 1)                                         # Displays shot # 4 in g1    (X Y Z Coordinates)
+     display_shot_XY(g1, 4)                                      # Displays shot # 4 in g1    (X Y Coordinates)
+
     display_players_movement(p1, 1, start_t, end_t)             # Displays Kemba Walkers entire X and Y movement in Quarter # 1
     print("Ball Coordinates: ")
     print(get_ballcoordinates(g1, 1, start_t, end_t))           # Gets ball coordinates for g1 throughout the entire 1st quarter
@@ -1092,5 +1141,20 @@ if __name__ == "__main__":
     if len(coord1) == 0:
         print("An empty list occurs whenever a player is not on the court during the time specified in the get_coordinates function.")
 
-    print("\n")
+    print("\n") 
     """
+
+
+
+# assert that jump balls with coordinates return a valid angle
+def test_jumpBallAngle():
+    g1 = game("0021500497", True, True)
+    assert g1.getJumpballAngle(g1.getJumpBalls()[0]['coordinates']) < 100          # assert jumpball angle is within an acceptable range
+    assert g1.getJumpballAngle(g1.getJumpBalls()[0]['coordinates']) > 80
+
+# assert that only jump balls with no coordinates return 0
+def test_jumpBallAngleNoCoord():
+    g1 = game("0021500025", True, True)
+    g2 = game("0021500423", True, True)
+    assert g1.getJumpballAngle(g1.getJumpBalls()[0]['coordinates']) == 0
+    assert g2.getJumpballAngle(g2.getJumpBalls()[0]['coordinates']) != 0
