@@ -146,7 +146,7 @@ class game:
 
         if moments:
             #with open("C:\\Users\\kff50\\Documents\\Senior Year\\CMPSC 484\\Basketball Project\\nba_sportvu\\" + str(gameid) + ".json") as f:
-            with open('0021500069.json') as f:
+            with open('0021500072.json') as f:
                 jsonf = json.load(f)
                 self.gamedate = datetime.datetime.strptime(jsonf['gamedate'], '%Y-%m-%d')
                 self.visitor = team(jsonf['events'][0]['visitor'], False)
@@ -165,7 +165,7 @@ class game:
 
         if pbp:
             #with open("C:\\Users\\kff50\\Documents\\Senior Year\\CMPSC 484\\Basketball Project\\pbp\\2015.12.23.BOS.at.CHO.0021500423.csv") as f:
-            with open('2015.11.04.LAC.at.GSW.0021500069.csv') as f:
+            with open('2015.11.05.CHO.at.DAL.0021500072.csv') as f:
                 reader = csv.DictReader(f)
                 for line in reader:
                     self.events.append(event(line))
@@ -639,8 +639,9 @@ class game:
                 gameClock = momentlist[momentCount].gameclock  # Get Game Clock
                 if quarter == shotquarter:  # Look For Quarter Shot Occurred.
                     #print(2)
-                    #print(beginsearch, endsearch, "CLOCK: ", gameClock)
+                    #print(quarter, beginsearch, endsearch, "CLOCK: ", gameClock)
                     if beginsearch >= gameClock >= endsearch:  # Look For Time Shot Occurred.
+                        momentlist[momentCount].timestamp
                         #print(3)
                         if momentlist[momentCount].ball and momentlist[momentCount+1].ball != None:  # Check To Make Sure The Ball Coordinates Are Not Missing.
                             #print(4)
@@ -656,7 +657,7 @@ class game:
                                     counter = momentCount
                                     while True:
                                         #print(8)
-                                        if momentlist[counter].ball == None or momentlist[counter-1].ball == None:
+                                        if momentlist[counter].ball is None or momentlist[counter-1].ball is None:
                                             #print(9)
                                             counter -= 1
                                             continue
@@ -665,6 +666,7 @@ class game:
                                             if momentlist[counter-1].ball[2] < momentlist[counter].ball[2]:
                                                 #print(11)
                                                 counter -= 1
+                                                continue
                                             if momentlist[counter-1].ball[2] >= momentlist[counter].ball[2]:
                                                 #print(12)
                                                 break
@@ -693,7 +695,8 @@ class game:
                                 #print(16)
                                 endCoordinate = {"quarter": quarter, "gameclock": gameClock, "x": x, "y": y,"z": z}
                                 break
-                    if gameClock < endsearch:
+                    diff = abs(gameClock - endsearch)
+                    if gameClock < endsearch and diff <= 0.05:
                         shotDict = {}
                         theListOfShots.append(shotDict)
                         momentCount = 0
@@ -1660,7 +1663,7 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv[1:])
-    g1 = game("0021500069", True, True)
+    g1 = game("0021500423", True, True)
     """
     m1 = g1.moments
     p1 = g1.home.players[5]                                     # Creates a Kemba Walker player object (g1, player index: 5)
