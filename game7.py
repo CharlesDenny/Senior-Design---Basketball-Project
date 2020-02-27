@@ -146,7 +146,7 @@ class game:
 
         if moments:
             #with open("C:\\Users\\kff50\\Documents\\Senior Year\\CMPSC 484\\Basketball Project\\nba_sportvu\\" + str(gameid) + ".json") as f:
-            with open('0021500423.json') as f:
+            with open('0021500420.json') as f:
                 jsonf = json.load(f)
                 self.gamedate = datetime.datetime.strptime(jsonf['gamedate'], '%Y-%m-%d')
                 self.visitor = team(jsonf['events'][0]['visitor'], False)
@@ -165,7 +165,7 @@ class game:
 
         if pbp:
             #with open("C:\\Users\\kff50\\Documents\\Senior Year\\CMPSC 484\\Basketball Project\\pbp\\2015.12.23.BOS.at.CHO.0021500423.csv") as f:
-            with open('2015.12.23.BOS.at.CHO.0021500423.csv') as f:
+            with open('2015.12.22.DET.at.MIA.0021500420.csv') as f:
                 reader = csv.DictReader(f)
                 for line in reader:
                     self.events.append(event(line))
@@ -355,242 +355,6 @@ class game:
                     d = {"player": SPlayername, "id": SPlayerid, "shooterindex": shooterIndex, "team": teamabb, "quarter": shotquarter, "begin": beginsearch, "end": endsearch, "outcome": outcome, "distance": feet}
                     theList.append(d)  # Adds Each General Shot Information To The List.
         return theList
-
-
-    def get_shot_X_coord(self, theList):                    # Gets x coordinate for each shot
-        momentlist = self.moments
-        momentCount = 0
-        listCount = 0
-        shotCounter = 1
-
-        shotDict = {}  # Initialize Shot Information Dictionary.
-        coordinate = {}  # Initialize Coordinates Dictionary.
-        shotCoordinates = []  # Initialize List Of Coordinates For Each Shot.
-        theListOfShots = []  # Initialize List Of Shots.
-        for entry in theList:  # Loop Through Each Shot Found.
-            isRimHeightDiscovered = False
-            isShotDiscovered = False
-            for m in momentlist:  # Loop Through Each Moment.
-                quarter = momentlist[momentCount].period  # Get Quarter
-                gameClock = momentlist[momentCount].gameclock  # Get Game Clock
-                playername = theList[listCount]["player"]  # Get Shot Information
-                playerid = theList[listCount]["id"]
-                shotquarter = theList[listCount]["quarter"]
-                beginsearch = theList[listCount]["begin"]
-                endsearch = theList[listCount]["end"]
-                outcome = theList[listCount]["outcome"]
-                teamabb = theList[listCount]["team"]
-                if quarter == shotquarter:  # Look For Quarter Shot Occurred.
-                    if beginsearch >= gameClock >= endsearch:  # Look For Time Shot Occurred.
-                        if momentlist[momentCount].ball != None:  # Check To Make Sure The Ball Coordinates Are Not Missing.
-                            if momentlist[momentCount].ball[2] >= 10:  # Check To See When Shot Begins (10 = Height Of Rim).
-                                if not isShotDiscovered:
-                                    isShotDiscovered = True
-                                if not isRimHeightDiscovered:
-                                    isRimHeightDiscovered = True
-                                    rimHeightDiscoveredMoment = momentCount
-                                    counter = momentCount
-                                    while True:
-                                        if momentlist[counter].ball == None or momentlist[counter-1].ball == None:
-                                            counter -= 1
-                                            continue
-                                        else:
-                                            if momentlist[counter-1].ball[2] < momentlist[counter].ball[2]:
-                                                counter -= 1
-                                            if momentlist[counter-1].ball[2] >= momentlist[counter].ball[2]:
-                                                break
-                                    while counter < rimHeightDiscoveredMoment:
-                                        if momentlist[counter].ball == None:
-                                            counter += 1
-                                            continue
-                                        else:
-                                            x = momentlist[counter].ball[0]  # Get Ball Coordinates
-                                            coordinate = x  # Store Ball Coordinates For That Moment.
-                                            shotCoordinates.append(coordinate)  # Store Ball Coordinates For That Moment In List.
-                                            counter += 1
-                                x = momentlist[momentCount].ball[0]  # Get Ball Coordinates
-                                coordinate = x  # Store Ball Coordinates For That Moment.
-                                shotCoordinates.append(coordinate)  # Store Ball Coordinates For That Moment In List.
-                            if momentlist[momentCount].ball[2] < 10 and isShotDiscovered:
-                                break
-                momentCount += 1
-            theListOfShots.append(shotCoordinates)  # Store All Shot Information In The List.
-            shotCoordinates = []  # Resets The Coordinates List For The Next Shot.
-            shotDict = {}  # Resets The Shot Information Dictionary For The Next Shot.
-            listCount += 1
-            momentCount = 0
-            shotCounter += 1
-        return theListOfShots
-
-
-    def get_shot_Y_coord(self, theList):                    # Gets y coordinate for each shot
-        momentlist = self.moments
-        momentCount = 0
-        listCount = 0
-
-        shotDict = {}  # Initialize Shot Information Dictionary.
-        coordinate = {}  # Initialize Coordinates Dictionary.
-        shotCoordinates = []  # Initialize List Of Coordinates For Each Shot.
-        theListOfShots = []  # Initialize List Of Shots.
-        for entry in theList:  # Loop Through Each Shot Found.
-            isRimHeightDiscovered = False
-            isShotDiscovered = False
-            for m in momentlist:  # Loop Through Each Moment.
-                quarter = momentlist[momentCount].period  # Get Quarter
-                gameClock = momentlist[momentCount].gameclock  # Get Game Clock
-                playername = theList[listCount]["player"]  # Get Shot Information
-                playerid = theList[listCount]["id"]
-                shotquarter = theList[listCount]["quarter"]
-                beginsearch = theList[listCount]["begin"]
-                endsearch = theList[listCount]["end"]
-                outcome = theList[listCount]["outcome"]
-                teamabb = theList[listCount]["team"]
-                if quarter == shotquarter:  # Look For Quarter Shot Occurred.
-                    if beginsearch >= gameClock >= endsearch:  # Look For Time Shot Occurred.
-                        if momentlist[momentCount].ball != None:  # Check To Make Sure The Ball Coordinates Are Not Missing.
-                            if momentlist[momentCount].ball[2] >= 10:  # Check To See When Shot Begins (10 = Height Of Rim).
-                                if not isShotDiscovered:
-                                    isShotDiscovered = True
-                                if not isRimHeightDiscovered:
-                                    isRimHeightDiscovered = True
-                                    rimHeightDiscoveredMoment = momentCount
-                                    counter = momentCount
-                                    while True:
-                                        if momentlist[counter].ball == None or momentlist[counter-1].ball == None:
-                                            counter -= 1
-                                            continue
-                                        else:
-                                            if momentlist[counter-1].ball[2] < momentlist[counter].ball[2]:
-                                                counter -= 1
-                                            if momentlist[counter-1].ball[2] >= momentlist[counter].ball[2]:
-                                                break
-                                    while counter < rimHeightDiscoveredMoment:
-                                        if momentlist[counter].ball == None:
-                                            counter += 1
-                                            continue
-                                        else:
-                                            y = momentlist[counter].ball[1]  # Get Ball Coordinates
-                                            coordinate = y  # Store Ball Coordinates For That Moment.
-                                            shotCoordinates.append(coordinate)  # Store Ball Coordinates For That Moment In List.
-                                            counter += 1
-                                y = momentlist[momentCount].ball[1]  # Get Ball Coordinates
-                                coordinate = y  # Store Ball Coordinates For That Moment.
-                                shotCoordinates.append(coordinate)  # Store Ball Coordinates For That Moment In List.
-                            if momentlist[momentCount].ball[2] < 10 and isShotDiscovered:
-                                break
-                momentCount += 1
-            theListOfShots.append(shotCoordinates)  # Store All Shot Information In The List.
-            shotCoordinates = []  # Resets The Coordinates List For The Next Shot.
-            shotDict = {}  # Resets The Shot Information Dictionary For The Next Shot.
-            listCount += 1
-            momentCount = 0
-        return theListOfShots
-
-
-    def get_shot_Z_coord(self, theList):                # Gets z coordinate for each shot
-        momentlist = self.moments
-        momentCount = 0
-        listCount = 0
-
-        shotDict = {}  # Initialize Shot Information Dictionary.
-        coordinate = {}  # Initialize Coordinates Dictionary.
-        shotCoordinates = []  # Initialize List Of Coordinates For Each Shot.
-        theListOfShots = []  # Initialize List Of Shots.
-        for entry in theList:  # Loop Through Each Shot Found.
-            isRimHeightDiscovered = False
-            isShotDiscovered = False
-            for m in momentlist:  # Loop Through Each Moment.
-                quarter = momentlist[momentCount].period  # Get Quarter
-                gameClock = momentlist[momentCount].gameclock  # Get Game Clock
-                playername = theList[listCount]["player"]  # Get Shot Information
-                playerid = theList[listCount]["id"]
-                shotquarter = theList[listCount]["quarter"]
-                beginsearch = theList[listCount]["begin"]
-                endsearch = theList[listCount]["end"]
-                outcome = theList[listCount]["outcome"]
-                teamabb = theList[listCount]["team"]
-                if quarter == shotquarter:  # Look For Quarter Shot Occurred.
-                    if beginsearch >= gameClock >= endsearch:  # Look For Time Shot Occurred.
-                        if momentlist[momentCount].ball != None:  # Check To Make Sure The Ball Coordinates Are Not Missing.
-                            if momentlist[momentCount].ball[2] >= 10:  # Check To See When Shot Begins (10 = Height Of Rim).
-                                if not isShotDiscovered:
-                                    isShotDiscovered = True
-                                if not isRimHeightDiscovered:
-                                    isRimHeightDiscovered = True
-                                    rimHeightDiscoveredMoment = momentCount
-                                    counter = momentCount
-                                    while True:
-                                        if momentlist[counter].ball == None or momentlist[counter-1].ball == None:
-                                            counter -= 1
-                                            continue
-                                        else:
-                                            if momentlist[counter-1].ball[2] < momentlist[counter].ball[2]:
-                                                counter -= 1
-                                            if momentlist[counter-1].ball[2] >= momentlist[counter].ball[2]:
-                                                break
-                                    while counter < rimHeightDiscoveredMoment:
-                                        if momentlist[counter].ball == None:
-                                            counter += 1
-                                            continue
-                                        else:
-                                            z = momentlist[counter].ball[2]  # Get Ball Coordinates
-                                            coordinate = z  # Store Ball Coordinates For That Moment.
-                                            shotCoordinates.append(coordinate)  # Store Ball Coordinates For That Moment In List.
-                                            counter += 1
-                                z = momentlist[momentCount].ball[2]  # Get Ball Coordinates
-                                coordinate = z  # Store Ball Coordinates For That Moment.
-                                shotCoordinates.append(coordinate)  # Store Ball Coordinates For That Moment In List.
-                            if momentlist[momentCount].ball[2] < 10 and isShotDiscovered:
-                                break
-                momentCount += 1
-            theListOfShots.append(shotCoordinates)  # Store All Shot Information In The List.
-            shotCoordinates = []  # Resets The Coordinates List For The Next Shot.
-            shotDict = {}  # Resets The Shot Information Dictionary For The Next Shot.
-            listCount += 1
-            momentCount = 0
-        return theListOfShots
-
-    def get_shot_coord(self, theList):                      # Gets shot coordinates
-        momentlist = self.moments
-        momentCount = 0
-        listCount = 0
-
-        shotDict = {}  # Initialize Shot Information Dictionary.
-        coordinate = {}  # Initialize Coordinates Dictionary.
-        shotCoordinates = []  # Initialize List Of Coordinates For Each Shot.
-        theListOfShots = []  # Initialize List Of Shots.
-
-        for entry in theList:  # Loop Through Each Shot Found.
-            for m in momentlist:  # Loop Through Each Moment.
-                quarter = momentlist[momentCount].period  # Get Quarter
-                gameClock = momentlist[momentCount].gameclock  # Get Game Clock
-                playername = theList[listCount]["player"]  # Get Shot Information
-                playerid = theList[listCount]["id"]
-                shotquarter = theList[listCount]["quarter"]
-                beginsearch = theList[listCount]["begin"]
-                endsearch = theList[listCount]["end"]
-                outcome = theList[listCount]["outcome"]
-                teamabb = theList[listCount]["team"]
-                if quarter == shotquarter:  # Look For Quarter Shot Occurred.
-                    if beginsearch >= gameClock >= endsearch:  # Look For Time Shot Occurred.
-                        if momentlist[
-                            momentCount].ball != None:  # Check To Make Sure The Ball Coordinates Are Not Missing.
-                            if momentlist[momentCount].ball[
-                                2] >= 10:  # Check To See When Shot Begins (10 = Height Of Rim).
-                                x = momentlist[momentCount].ball[0]  # Get Ball Coordinates
-                                y = momentlist[momentCount].ball[1]
-                                z = momentlist[momentCount].ball[2]
-                                coordinate = {"gameclock": gameClock, "x": x, "y": y,
-                                              "z": z}  # Store Ball Coordinates For That Moment.
-                                shotCoordinates.append(
-                                    coordinate)  # Store Ball Coordinates For That Moment In List.
-                momentCount += 1
-            theListOfShots.append(shotCoordinates)  # Store All Shot Information In The List.
-            shotCoordinates = []  # Resets The Coordinates List For The Next Shot.
-            shotDict = {}  # Resets The Shot Information Dictionary For The Next Shot.
-            listCount += 1
-            momentCount = 0
-        return theListOfShots
 
     def getShots(self, theList):                # Gets info for each shot as well as the coordinates for each shot
         momentlist = self.moments
@@ -1247,41 +1011,6 @@ class moment:
                     return teamPlayers[playerCount]
                 playerCount += 1
 
-    # def getballhandler(self):
-    # if not self.ball: return None
-
-    # closest=None
-    # closest_dist= 1000
-    # ot=self.getoffensiveteam()
-    # if not ot: return None
-
-    # for p in self.players:
-    # if not p: continue
-    # i = 'o' if p['teamid'] == ot.teamid else 'd'
-    # temp = dist((self.ball[0], self.ball[1]), p['pos'])
-    # if temp < closest[i]['dist']:
-    # closest[i]['player'] = p
-    # closest[i]['dist'] = temp
-    # return closest['o']['player'], closest['d']['player']
-
-    # def getballdefender(self):
-    # ballhandler = self.getballhandler()
-    # if not ballhandler: return None
-
-    # closest=None
-    # closest_dist= 1000
-    # ot=self.getoffensiveteam()
-    # if not ot: return None
-
-    # for p in [q for q in self.players if self.game.players[q['playerid']].teamid != ot.teamid]:
-    # if not p: continue
-    # if p['teamid'] == ot.teamid: continue
-    # temp = dist(ballhandler.pos, p['pos'])
-    # if temp < closest_dist:
-    # closest=p
-    # closest_dist=temp
-    # return closest
-
     def event(self):
         return self.game.getevent(self.period, self.gameclock)
 
@@ -1521,33 +1250,33 @@ def display_shot_XY(g1, shotIndex):                # Displays shot at given inde
 
 def display_shot(g1, shotIndex):                # Displays shot at given index in a specified game
     s1 = g1.get_list_of_shots()
-    s2 = g1.get_shot_X_coord(s1)  # Gets X Coordinate for each shot
-    # print(s2)
-    s3 = g1.get_shot_Y_coord(s1)  # Gets Y Coordinate for each shot
-    # print(s3)
-    s4 = g1.get_shot_Z_coord(s1)  # Gets Z Coordinate for each shot
-    # print(s4)
-    # print(g1.getShots(s1))            # Gets every shot as well as the coordinates for each for shot
+    shots = g1.getShots(s1)
+    s2 = []
+    s3 = []
+    s4 = []
+
+    try:
+        shotcoords = shots[shotIndex]["coordinates"]
+    except KeyError:
+        return "Shot Blocked"
+    i = 0
+    for s in shotcoords:
+        s2.append(shotcoords[i]["x"])
+        s3.append(shotcoords[i]["y"])
+        s4.append(shotcoords[i]["z"])
+        i += 1
 
     x_coord = np.array(s2)
     y_coord = np.array(s3)
     z_coord = np.array(s4)
 
-    x = x_coord[shotIndex]
-    y = y_coord[shotIndex]
-    z = z_coord[shotIndex]
-
-
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(x, y, z, c='r', marker='o')
+    ax.scatter(x_coord, y_coord, z_coord, c='r', marker='o')
     ax.set_xlabel('X Coordinates')
     ax.set_ylabel('Y Coordinates')
     ax.set_zlabel('Z Coordinates')
 
-
-
-    # plt.title(g1.moments[0].)
     plt.show()
     plt.clf()
     plt.close()
@@ -1666,7 +1395,7 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv[1:])
-    g1 = game("0021500423", True, True)
+    g1 = game("0021500420", True, True)
     """
     m1 = g1.moments
     p1 = g1.home.players[5]                                     # Creates a Kemba Walker player object (g1, player index: 5)
@@ -1726,10 +1455,12 @@ if __name__ == "__main__":
         momentCount += 1
     '''
 
-    #passes = g1.getPasses()
+    passes = g1.getPasses()
 
-    #for p in passes:
-        #print(p)
+    for p in passes:
+        print(p)
+    passesjson = json.dumps(passes)
+    print(passesjson)
 
     '''
     eventlist = g1.events
@@ -1739,7 +1470,7 @@ if __name__ == "__main__":
         eventCount += 1
     '''
 
-
+    '''
     shotlist = g1.get_list_of_shots()
 
     shots = g1.getShots(shotlist)
@@ -1759,6 +1490,7 @@ if __name__ == "__main__":
             if shots[i]["airball"] == True:
                 print(shot)
         i += 1
+    '''
 
     '''
     print(g1.getJumpBalls())                                    # Displays all jumpballs in g1
