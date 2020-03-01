@@ -146,7 +146,7 @@ class game:
 
         if moments:
             #with open("C:\\Users\\kff50\\Documents\\Senior Year\\CMPSC 484\\Basketball Project\\nba_sportvu\\" + str(gameid) + ".json") as f:
-            with open('0021500420.json') as f:
+            with open('0021500489.json') as f:
                 jsonf = json.load(f)
                 self.gamedate = datetime.datetime.strptime(jsonf['gamedate'], '%Y-%m-%d')
                 self.visitor = team(jsonf['events'][0]['visitor'], False)
@@ -165,7 +165,7 @@ class game:
 
         if pbp:
             #with open("C:\\Users\\kff50\\Documents\\Senior Year\\CMPSC 484\\Basketball Project\\pbp\\2015.12.23.BOS.at.CHO.0021500423.csv") as f:
-            with open('2015.12.22.DET.at.MIA.0021500420.csv') as f:
+            with open('2015.12.31.POR.at.UTA.0021500489.csv') as f:
                 reader = csv.DictReader(f)
                 for line in reader:
                     self.events.append(event(line))
@@ -370,6 +370,7 @@ class game:
         shotCoordinates = []  # Initialize List Of Coordinates For Each Shot.
         theListOfShots = []  # Initialize List Of Shots.
         shotTimes = []  # Initialize a List of Shot Times
+        #print(momentlist[len(momentlist)-1].gameclock)
 
         while listCount < len(theList):  # Loop Through Each Shot Found.
             shotNotFound = False
@@ -397,13 +398,23 @@ class game:
                 blockindex = theList[listCount]["blockerindex"]
             else:
                 blockid = 0
-            while momentCount < len(momentlist):  # Loop Through Each Moment.
+            while momentCount < len(momentlist) - 1:  # Loop Through Each Moment.
+                #print("Shot #", listCount)
                 #print(1)
                 quarter = momentlist[momentCount].period  # Get Quarter
                 gameClock = momentlist[momentCount].gameclock  # Get Game Clock
+                if beginsearch > momentlist[0].gameclock:
+                    shotDict = {"player": playername, "begin": convert(int(beginsearch)), "end": convert(int(endsearch))}
+                    theListOfShots.append(shotDict)
+                    momentCount = 0
+                    listCount += 1
+                    shotNotFound = True
+                    break
+
                 if quarter == shotquarter:  # Look For Quarter Shot Occurred.
                     #print(2)
                     #print(quarter, beginsearch, endsearch, "CLOCK: ", gameClock)
+                    #print(momentCount, len(momentlist))
                     if beginsearch >= gameClock >= endsearch:  # Look For Time Shot Occurred.
                         momentlist[momentCount].timestamp
                         #print(3)
@@ -457,12 +468,12 @@ class game:
                                 shotCoordinates.append(coordinate)  # Store Ball Coordinates For That Moment In List.
                             if momentlist[momentCount+1].ball[2] < 10 and isShotDiscovered:
                                 #print(16)
-                                endCoordinate = {"quarter": quarter, "gameclock": gameClock, "x": x, "y": y,"z": z}
+                                endCoordinate = {"quarter": quarter, "gameclock": gameClock, "x": x, "y": y,"z": z, "momentindex": momentCount+1}
                                 break
-                    diff = abs(gameClock - endsearch)
-                    if gameClock < endsearch and diff <= 0.05:
+                    #diff = abs(gameClock - endsearch)
+                    if gameClock < endsearch: #and diff <= 0.05:
                         if blockid != 0:
-                            shotDict = {"playername": playername, "playerid": playerid, "team": teamabb, "quarter": shotquarter, "time": time, "result": outcome, "distance": distance, "block": block, "blockid": blockid}
+                            shotDict = {"playername": playername, "playerid": playerid, "team": teamabb, "quarter": shotquarter, "time": endsearch+1, "result": outcome, "distance": distance, "block": block, "blockid": blockid}
                         else:
                             shotDict = {"player": playername, "begin": convert(int(beginsearch)), "end": convert(int(endsearch))}
                         theListOfShots.append(shotDict)
@@ -499,9 +510,25 @@ class game:
                 if not shotAlreadyFound:
                     #print(25)
                     shotTimes.append(endCoordinate)
+
+                if shotAlreadyFound and momentCount == len(momentlist) - 1 and shotquarter == 4 and endsearch == 0:
+                    if blockid != 0:
+                        shotDict = {"playername": playername, "playerid": playerid, "team": teamabb,
+                                    "quarter": shotquarter, "time": time, "result": outcome, "distance": distance,
+                                    "block": block, "blockid": blockid}
+                    else:
+                        shotDict = {"player": playername, "begin": convert(int(beginsearch)),
+                                    "end": convert(int(endsearch))}
+                    theListOfShots.append(shotDict)
+                    listCount += 1
+                    #print(1)
+                    break
+
                 if shotAlreadyFound:
                     #print(26)
-                    beginsearch = endCoordinate["gameclock"] - 0.04
+                    #beginsearch = endCoordinate["gameclock"] - 0.04
+                    momentindex = endCoordinate["momentindex"]
+                    beginsearch = momentlist[momentindex].gameclock
                     shotCoordinates = []
                     momentCount = 0
                     isRimHeightDiscovered = False
@@ -1395,7 +1422,7 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv[1:])
-    g1 = game("0021500420", True, True)
+    g1 = game("0021500419", True, True)
     """
     m1 = g1.moments
     p1 = g1.home.players[5]                                     # Creates a Kemba Walker player object (g1, player index: 5)
@@ -1455,12 +1482,14 @@ if __name__ == "__main__":
         momentCount += 1
     '''
 
+    '''
     passes = g1.getPasses()
 
     for p in passes:
         print(p)
     passesjson = json.dumps(passes)
     print(passesjson)
+    '''
 
     '''
     eventlist = g1.events
@@ -1470,7 +1499,6 @@ if __name__ == "__main__":
         eventCount += 1
     '''
 
-    '''
     shotlist = g1.get_list_of_shots()
 
     shots = g1.getShots(shotlist)
@@ -1490,7 +1518,6 @@ if __name__ == "__main__":
             if shots[i]["airball"] == True:
                 print(shot)
         i += 1
-    '''
 
     '''
     print(g1.getJumpBalls())                                    # Displays all jumpballs in g1
