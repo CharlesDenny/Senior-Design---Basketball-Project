@@ -230,14 +230,14 @@ class game:
 
             if (keyword1 in event.text or keyword2 in event.text) and keyword3 in event.text:  # Look For Keywords To Find Shots.
                 shotquarter = event.period
-                if gameClock <= 713:     # Accounts for any shots at the beginning of a quarter.
-                    beginsearch = gameClock + 7  # Begin Searching For The Start Of The Shot Five Seconds Before.
+                if gameClock <= 705:     # Accounts for any shots at the beginning of a quarter.
+                    beginsearch = gameClock + 15  # Begin Searching For The Start Of The Shot Five Seconds Before.
                 else:
-                    beginsearch = gameClock
-                if gameClock >= 1:      # Accounts for any shots at the end of a quarter.
-                    endsearch = gameClock - 1
+                    beginsearch = 720
+                if gameClock >= 5:      # Accounts for any shots at the end of a quarter.
+                    endsearch = gameClock - 5
                 else:
-                    endsearch = gameClock
+                    endsearch = 0
                 if keyword1 in event.text:
                     outcome = "Made"
                 if keyword2 in event.text:
@@ -366,6 +366,7 @@ class game:
         momentCount = 0
         listCount = 0
         shotAlreadyFound = False
+        wrongPlayer = False
         shotCoordinates = []  # Initialize List Of Coordinates For Each Shot.
         theListOfShots = []  # Initialize List Of Shots.
         shotTimes = []  # Initialize a List of Shot Times
@@ -380,7 +381,7 @@ class game:
             shooterindex = theList[listCount]["shooterindex"]
             shotquarter = theList[listCount]["quarter"]
             shottime = theList[listCount]["time"]
-            if not shotAlreadyFound:
+            if not shotAlreadyFound and not wrongPlayer:
                 beginsearch = theList[listCount]["begin"]
             endsearch = theList[listCount]["end"]
             outcome = theList[listCount]["outcome"]
@@ -399,12 +400,13 @@ class game:
             else:
                 blockid = 0
             shotAlreadyFound = False
+            wrongPlayer = False
             while momentCount < len(momentlist) - 1:  # Loop Through Each Moment.
                 #print("Shot #", listCount)
                 print(1)
                 quarter = momentlist[momentCount].period  # Get Quarter
                 gameClock = momentlist[momentCount].gameclock  # Get Game Clock
-                if beginsearch > momentlist[0].gameclock:
+                if beginsearch > momentlist[0].gameclock and shotquarter == 1:
                     shotNotFound = True
                     break
                 if quarter == shotquarter:  # Look For Quarter Shot Occurred.
@@ -442,6 +444,7 @@ class game:
                                                 print(12)
                                                 break
 
+                                    releaseMoment = counter
                                     while counter < rimHeightDiscoveredMoment:
                                         print(13)
                                         if momentlist[counter].ball == None:
@@ -484,13 +487,59 @@ class game:
                     break
                 momentCount += 1
 
-            '''
-            if shotNotFound and distance <= 1:
-                length = len(theListOfShots) - 1
-                previousShotCoordinates = theListOfShots[length]["coordinates"]
-                while True:
-            '''
+            print("BEFORE POSSESSION FUNCTION")
+            if not shotNotFound:
+                print(releaseMoment)
+                playerInPossession = False
+                start = releaseMoment - 10
+                finish = releaseMoment + 11
+                index = 0
+                for index in range(start, finish):
+                    possession = momentlist[index].getPossession()
+                    if possession is None or playerid != possession.playerid:
+                        index += 1
+                    else:
+                        playerInPossession = True
+                        break
+                if not playerInPossession:
+                    possession = momentlist[releaseMoment].getbhbd()
+                    if playerid == possession[0].playerid:
+                        playerInPossession = True
+                if not playerInPossession:
+                    momentindex = endCoordinate["momentindex"]
+                    nexttime = momentlist[momentindex].gameclock
+                    if beginsearch == nexttime:
+                        beginsearch = nexttime - 0.04
+                    else:
+                        beginsearch = nexttime
+                    print(beginsearch)
+                    shotCoordinates = []
+                    momentCount = 0
+                    wrongPlayer = True
+            print("AFTER POSSESSION FUNCTION")
 
+            if shotNotFound and distance <= 1 and endsearch != 0:
+                last = len(theListOfShots) - 1
+                lasttime = len(shotTimes) - 1
+                previousShotCoordinates = theListOfShots[last]["coordinates"]
+                newCoordinates = []
+                counter = len(previousShotCoordinates) - 2
+                prev_z = previousShotCoordinates[counter]["z"]
+                curr_z = previousShotCoordinates[counter-1]["z"]
+                while curr_z > prev_z:
+                    prev_z = curr_z
+                    curr_z = previousShotCoordinates[counter-2]["z"]
+                    counter -= 1
+                while curr_z < prev_z:
+                    prev_z = curr_z
+                    curr_z = previousShotCoordinates[counter-2]["z"]
+                    counter -= 1
+                newCoordinates = previousShotCoordinates[:counter]
+                shotCoordinates = previousShotCoordinates[counter:]
+                lastnew = len(newCoordinates) - 1
+                theListOfShots[last]["coordinates"] = newCoordinates
+                shotTimes[lasttime] = newCoordinates[lastnew]
+                shotNotFound = False
 
             if shotNotFound:
                 if blockid != 0:
@@ -504,7 +553,7 @@ class game:
                 momentCount = 0
                 listCount += 1
 
-            else:
+            if not shotNotFound and not wrongPlayer:
                 print(17)
                 timeCounter = 0
                 if len(shotTimes) > 0:
@@ -527,9 +576,12 @@ class game:
 
                 if shotAlreadyFound:
                     print(26)
-                    #beginsearch = endCoordinate["gameclock"] - 0.04
                     momentindex = endCoordinate["momentindex"]
-                    beginsearch = momentlist[momentindex].gameclock
+                    nexttime = momentlist[momentindex].gameclock
+                    if beginsearch == nexttime:
+                        beginsearch = nexttime - 0.04
+                    else:
+                        beginsearch = nexttime
                     print(beginsearch)
                     shotCoordinates = []
                     momentCount = 0
@@ -1481,6 +1533,7 @@ if __name__ == "__main__":
         momentCount += 1
     '''
 
+
     '''
     passes = g1.getPasses()
 
@@ -1501,8 +1554,15 @@ if __name__ == "__main__":
     shotlist = g1.get_list_of_shots()
 
     shots = g1.getShots(shotlist)
+    i = 0
     for shot in shots:
         print(shot)
+        try:
+            last = len(shot['coordinates']) - 1
+            print(shot['coordinates'][last]['x'])
+        except KeyError:
+            pass
+        i += 1
 
     #shotsjson = json.dumps(shots)
     #print(shotsjson)
@@ -1516,6 +1576,25 @@ if __name__ == "__main__":
         if "airball" in shots[i].keys():
             if shots[i]["airball"] == True:
                 print(shot)
+        i += 1
+
+    i = 24400
+    while i < 24800:
+        possession = momentlist[i].getPossession()
+        if possession is None:
+            print(i, convert(int(momentlist[i].gameclock)), None)
+        else:
+            print(i, convert(int(momentlist[i].gameclock)), possession.firstname, possession.lastname)
+        i += 1
+
+    i = 0
+    while i < len(g1.home.players):
+        print(g1.home.players[i].firstname, g1.home.players[i].lastname, g1.home.players[i].playerid)
+        i += 1
+
+    i = 0
+    while i < len(g1.visitor.players):
+        print(g1.visitor.players[i].firstname, g1.visitor.players[i].lastname, g1.visitor.players[i].playerid)
         i += 1
 
     '''
