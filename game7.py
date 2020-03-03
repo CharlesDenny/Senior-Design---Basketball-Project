@@ -223,14 +223,15 @@ class game:
         for event in gameEvents:
             assistFlag = False
             blockFlag = False
+            homePlayersFinished = False
             momentInfo = event.text
             quarter = event.period
             gameClock = event.gameclock
 
             if (keyword1 in event.text or keyword2 in event.text) and keyword3 in event.text:  # Look For Keywords To Find Shots.
                 shotquarter = event.period
-                if gameClock < 714:     # Accounts for any shots at the beginning of a quarter.
-                    beginsearch = gameClock + 6  # Begin Searching For The Start Of The Shot Five Seconds Before.
+                if gameClock <= 713:     # Accounts for any shots at the beginning of a quarter.
+                    beginsearch = gameClock + 7  # Begin Searching For The Start Of The Shot Five Seconds Before.
                 else:
                     beginsearch = gameClock
                 if gameClock >= 1:      # Accounts for any shots at the end of a quarter.
@@ -243,51 +244,55 @@ class game:
                     outcome = "Missed"
                 playerCount = 0
                 for players in self.players:  # Loop Through List Of Players To Determine Who Took The Shot.
-                    if playerCount >= len(self.home.players) or playerCount >= len(self.visitor.players):  # Maximum of 13 Players Per Team.
-                        break
-                    firstLetter = self.home.players[playerCount].firstname[0]  # Compare First Initial And Last Name In PLay-By-Play.
-                    firstInitial = firstLetter + "."
-                    lastname = self.home.players[playerCount].lastname
-                    name = firstInitial + " " + lastname
-                    if name in event.text:
+                    if playerCount >= len(self.home.players):
+                        homePlayersFinished = True
+                        if playerCount >= len(self.visitor.players):
+                            break
 
-                        if "ft" in event.text:
-                            ftloc = event.text.find("ft")
-                            if event.text[ftloc-3] == " ":
-                                feet = int(event.text[ftloc-2])
+                    if not homePlayersFinished:
+                        firstLetter = self.home.players[playerCount].firstname[0]  # Compare First Initial And Last Name In PLay-By-Play.
+                        firstInitial = firstLetter + "."
+                        lastname = self.home.players[playerCount].lastname
+                        name = firstInitial + " " + lastname
+                        if name in event.text:
+
+                            if "ft" in event.text:
+                                ftloc = event.text.find("ft")
+                                if event.text[ftloc-3] == " ":
+                                    feet = int(event.text[ftloc-2])
+                                else:
+                                    firstDigit = event.text[ftloc-3]
+                                    secondDigit = event.text[ftloc-2]
+                                    feet = int((firstDigit + secondDigit))
+
+                            if "rim" in event.text:
+                                feet = 0
+
+                            nloc = event.text.find(name)
+                            if "assist" in event.text:
+                                aloc = event.text.find("assist")
+                                assistFlag = True
+                                if nloc < aloc:
+                                    shooter = self.home.players[playerCount]
+                                    teamabb = self.home.teamname_abbrev
+                                    shooterIndex = playerCount
+                                else:
+                                    assister = self.home.players[playerCount]
+                                    assisterIndex = playerCount
+                            elif "block" in event.text:
+                                bloc = event.text.find("block")
+                                blockFlag = True
+                                if nloc < bloc:
+                                    shooter = self.home.players[playerCount]
+                                    teamabb = self.home.teamname_abbrev
+                                    shooterIndex = playerCount
+                                else:
+                                    blocker = self.home.players[playerCount]
+                                    blockerIndex = playerCount
                             else:
-                                firstDigit = event.text[ftloc-3]
-                                secondDigit = event.text[ftloc-2]
-                                feet = int((firstDigit + secondDigit))
-
-                        if "rim" in event.text:
-                            feet = 0
-
-                        nloc = event.text.find(name)
-                        if "assist" in event.text:
-                            aloc = event.text.find("assist")
-                            assistFlag = True
-                            if nloc < aloc:
                                 shooter = self.home.players[playerCount]
                                 teamabb = self.home.teamname_abbrev
                                 shooterIndex = playerCount
-                            else:
-                                assister = self.home.players[playerCount]
-                                assisterIndex = playerCount
-                        elif "block" in event.text:
-                            bloc = event.text.find("block")
-                            blockFlag = True
-                            if nloc < bloc:
-                                shooter = self.home.players[playerCount]
-                                teamabb = self.home.teamname_abbrev
-                                shooterIndex = playerCount
-                            else:
-                                blocker = self.home.players[playerCount]
-                                blockerIndex = playerCount
-                        else:
-                            shooter = self.home.players[playerCount]
-                            teamabb = self.home.teamname_abbrev
-                            shooterIndex = playerCount
 
                     firstLetter = self.visitor.players[playerCount].firstname[
                         0]  # Compare First Initial And Last Name In PLay-By-Play.
@@ -374,8 +379,8 @@ class game:
 
         while listCount < len(theList):  # Loop Through Each Shot Found.
             shotNotFound = False
-            #print("SHOT #: ", listCount)
-            #print(listCount)
+            quarterEndFound = False
+            print("SHOT #: ", listCount)
             playername = theList[listCount]["player"]  # Get Shot Information
             playerid = theList[listCount]["id"]
             shooterindex = theList[listCount]["shooterindex"]
@@ -400,7 +405,7 @@ class game:
                 blockid = 0
             while momentCount < len(momentlist) - 1:  # Loop Through Each Moment.
                 #print("Shot #", listCount)
-                #print(1)
+                print(1)
                 quarter = momentlist[momentCount].period  # Get Quarter
                 gameClock = momentlist[momentCount].gameclock  # Get Game Clock
                 if beginsearch > momentlist[0].gameclock:
@@ -412,48 +417,48 @@ class game:
                     break
 
                 if quarter == shotquarter:  # Look For Quarter Shot Occurred.
-                    #print(2)
-                    #print(quarter, beginsearch, endsearch, "CLOCK: ", gameClock)
-                    #print(momentCount, len(momentlist))
+                    print(2)
+                    print(quarter, beginsearch, endsearch, "CLOCK: ", gameClock)
+                    print(momentCount, len(momentlist))
                     if beginsearch >= gameClock >= endsearch:  # Look For Time Shot Occurred.
                         momentlist[momentCount].timestamp
-                        #print(3)
+                        print(3)
                         if momentlist[momentCount].ball and momentlist[momentCount+1].ball != None:  # Check To Make Sure The Ball Coordinates Are Not Missing.
-                            #print(4)
+                            print(4)
                             if momentlist[momentCount].ball[2] >= 10:  # Check To See When Shot Begins (10 = Height Of Rim).
-                                #print(5)
+                                print(5)
                                 if not isShotDiscovered:
-                                    #print(6)
+                                    print(6)
                                     isShotDiscovered = True
                                 if not isRimHeightDiscovered:
-                                    #print(7)
+                                    print(7)
                                     isRimHeightDiscovered = True
                                     rimHeightDiscoveredMoment = momentCount
                                     counter = momentCount
                                     while True:
-                                        #print(8)
+                                        print(8)
                                         if momentlist[counter].ball is None or momentlist[counter-1].ball is None:
-                                            #print(9)
+                                            print(9)
                                             counter -= 1
                                             continue
                                         else:
-                                            #print(10)
+                                            print(10)
                                             if momentlist[counter-1].ball[2] < momentlist[counter].ball[2]:
-                                                #print(11)
+                                                print(11)
                                                 counter -= 1
                                                 continue
                                             if momentlist[counter-1].ball[2] >= momentlist[counter].ball[2]:
-                                                #print(12)
+                                                print(12)
                                                 break
 
                                     while counter < rimHeightDiscoveredMoment:
-                                        #print(13)
+                                        print(13)
                                         if momentlist[counter].ball == None:
-                                            #print(14)
+                                            print(14)
                                             counter += 1
                                             continue
                                         else:
-                                            #print(15)
+                                            print(15)
                                             gameClock = momentlist[counter].gameclock
                                             x = momentlist[counter].ball[0]  # Get Ball Coordinates
                                             y = momentlist[counter].ball[1]
@@ -467,51 +472,77 @@ class game:
                                 coordinate = {"quarter": quarter, "gameclock": gameClock, "x": x, "y": y,"z": z}  # Store Ball Coordinates For That Moment.
                                 shotCoordinates.append(coordinate)  # Store Ball Coordinates For That Moment In List.
                             if momentlist[momentCount+1].ball[2] < 10 and isShotDiscovered:
-                                #print(16)
+                                print(16)
                                 endCoordinate = {"quarter": quarter, "gameclock": gameClock, "x": x, "y": y,"z": z, "momentindex": momentCount+1}
                                 break
-                    #diff = abs(gameClock - endsearch)
-                    if gameClock < endsearch: #and diff <= 0.05:
+                    diff = abs(gameClock - endsearch)
+                    if gameClock < endsearch and diff > 0.05:
+                        timeError = gameClock
+                        counter = momentCount
+                        while timeError == momentlist[counter].gameclock:
+                            counter += 1
+                        momentCount = counter
+
+                    if gameClock < endsearch and diff <= 0.05:
                         if blockid != 0:
                             shotDict = {"playername": playername, "playerid": playerid, "team": teamabb, "quarter": shotquarter, "time": endsearch+1, "result": outcome, "distance": distance, "block": block, "blockid": blockid}
                         else:
                             shotDict = {"player": playername, "begin": convert(int(beginsearch)), "end": convert(int(endsearch))}
                         theListOfShots.append(shotDict)
                         momentCount = 0
+                        print("LIST BEFORE: ", listCount)
                         listCount += 1
+                        print("LIST AFTER: ", listCount)
                         shotNotFound = True
+                        shotAlreadyFound = False
                         break
+                if quarter > shotquarter:
+                    quarterEndFound = True
+                    shotAlreadyFound = False
+                    break
                 momentCount += 1
 
+            if quarterEndFound:
+                if blockid != 0:
+                    shotDict = {"playername": playername, "playerid": playerid, "team": teamabb, "quarter": shotquarter,
+                                "time": endsearch + 1, "result": outcome, "distance": distance, "block": block,
+                                "blockid": blockid}
+                else:
+                    shotDict = {"player": playername, "begin": convert(int(beginsearch)),
+                                "end": convert(int(endsearch))}
+                theListOfShots.append(shotDict)
+                momentCount = 0
+                listCount += 1
+
             #print("Shot Ends ", shotNotFound)
-            if not shotNotFound:
-                #print(17)
+            if not shotNotFound and not quarterEndFound:
+                print(17)
                 shotAlreadyFound = False
 
                 timeCounter = 0
                 if len(shotTimes) > 0:
-                    #print(18)
+                    print(18)
                     for times in shotTimes:
-                        #print(19)
+                        print(19)
                         if shotTimes[timeCounter]["quarter"] == endCoordinate["quarter"]:
-                            #print(20)
+                            print(20)
                             if shotTimes[timeCounter]["gameclock"] == endCoordinate["gameclock"]:
-                                #print(21)
+                                print(21)
                                 if shotTimes[timeCounter]["x"] == endCoordinate["x"]:
-                                    #print(22)
+                                    print(22)
                                     if shotTimes[timeCounter]["y"] == endCoordinate["y"]:
-                                        #print(23)
+                                        print(23)
                                         if shotTimes[timeCounter]["z"] == endCoordinate["z"]:
-                                            #print(24)
+                                            print(24)
                                             shotAlreadyFound = True
                                             break
                         timeCounter += 1
 
-                if not shotAlreadyFound:
-                    #print(25)
+                if not shotAlreadyFound and not quarterEndFound:
+                    print(25)
                     shotTimes.append(endCoordinate)
 
-                if shotAlreadyFound and momentCount == len(momentlist) - 1 and shotquarter == 4 and endsearch == 0:
+                if shotAlreadyFound and momentCount == len(momentlist) - 1 and shotquarter == 4 and endsearch == 0 and not quarterEndFound:
                     if blockid != 0:
                         shotDict = {"playername": playername, "playerid": playerid, "team": teamabb,
                                     "quarter": shotquarter, "time": time, "result": outcome, "distance": distance,
@@ -521,49 +552,50 @@ class game:
                                     "end": convert(int(endsearch))}
                     theListOfShots.append(shotDict)
                     listCount += 1
-                    #print(1)
+                    print(1)
                     break
 
-                if shotAlreadyFound:
-                    #print(26)
+                if shotAlreadyFound and not quarterEndFound:
+                    print(26)
                     #beginsearch = endCoordinate["gameclock"] - 0.04
                     momentindex = endCoordinate["momentindex"]
                     beginsearch = momentlist[momentindex].gameclock
+                    print(beginsearch)
                     shotCoordinates = []
                     momentCount = 0
                     isRimHeightDiscovered = False
                     isShotDiscovered = False
 
-                if not shotAlreadyFound:
-                    #print(27)
+                if not shotAlreadyFound and not quarterEndFound:
+                    print(27)
                     if len(shotCoordinates) == 0:
-                        #print(28)
+                        print(28)
                         time = convert(int(endsearch + 1))
                     else:
-                        #print(29)
+                        print(29)
                         time = convert(int(shotCoordinates[0]["gameclock"]))
 
                     if outcome == "Missed" and len(shotCoordinates) > 0 and distance >= 12:
-                        #print(30)
+                        print(30)
                         airBall = self.detectAirBall(shotCoordinates)
                     else:
-                        #print(31)
+                        print(31)
                         airBall = False
 
                     if assistid != 0:
-                        #print(32)
+                        print(32)
                         shotDict = {"playername": playername, "playerid": playerid, "team": teamabb, "quarter": shotquarter, "time": time, "result": outcome, "distance": distance, "assist": assist, "assistid": assistid, "coordinates": shotCoordinates}
                     if blockid != 0:
-                        #print(33)
+                        print(33)
                         shotDict = {"playername": playername, "playerid": playerid, "team": teamabb, "quarter": shotquarter, "time": time, "result": outcome, "distance": distance, "block": block, "blockid": blockid}
                     if assistid == 0 and blockid == 0 and outcome == "Missed" and distance >= 12:
-                        #print(34)
+                        print(34)
                         shotDict = {"playername": playername, "playerid": playerid, "team": teamabb, "quarter": shotquarter, "time": time, "result": outcome, "distance": distance, "airball": airBall, "coordinates": shotCoordinates}
                     if assistid == 0 and blockid == 0 and outcome == "Missed" and distance < 12:
-                        #print(35)
+                        print(35)
                         shotDict = {"playername": playername, "playerid": playerid, "team": teamabb, "quarter": shotquarter, "time": time, "result": outcome, "distance": distance, "coordinates": shotCoordinates}
                     if assistid == 0 and blockid == 0 and outcome == "Made":
-                        #print(36)
+                        print(36)
                         shotDict = {"playername": playername, "playerid": playerid, "team": teamabb, "quarter": shotquarter, "time": time, "result": outcome, "distance": distance, "coordinates": shotCoordinates}
                     theListOfShots.append(shotDict)  # Store All Shot Information In The List.
                     shotCoordinates = []  # Resets The Coordinates List For The Next Shot.
