@@ -345,19 +345,19 @@ class game:
                     SPlayerid = shooter.playerid
                     APlayername = assister.firstname + " " + assister.lastname
                     APlayerid = assister.playerid
-                    d = {"player": SPlayername, "id": SPlayerid, "shooterindex": shooterIndex, "team": teamabb, "quarter": shotquarter, "begin": beginsearch, "end": endsearch, "outcome": outcome, "distance": feet, "assist": APlayername, "assistid": APlayerid, "assisterindex": assisterIndex}
+                    d = {"player": SPlayername, "id": SPlayerid, "shooterindex": shooterIndex, "team": teamabb, "quarter": shotquarter, "time": gameClock, "begin": beginsearch, "end": endsearch, "outcome": outcome, "distance": feet, "assist": APlayername, "assistid": APlayerid, "assisterindex": assisterIndex}
                     theList.append(d)  # Adds Each General Shot Information To The List.
                 elif blockFlag:
                     SPlayername = shooter.firstname + " " + shooter.lastname
                     SPlayerid = shooter.playerid
                     BPlayername = blocker.firstname + " " + blocker.lastname
                     BPlayerid = blocker.playerid
-                    d = {"player": SPlayername, "id": SPlayerid, "shooterindex": shooterIndex, "team": teamabb, "quarter": shotquarter, "begin": beginsearch, "end": endsearch, "outcome": outcome, "distance": feet, "block": BPlayername, "blockid": BPlayerid, "blockerindex": blockerIndex}
+                    d = {"player": SPlayername, "id": SPlayerid, "shooterindex": shooterIndex, "team": teamabb, "quarter": shotquarter, "time": gameClock, "begin": beginsearch, "end": endsearch, "outcome": outcome, "distance": feet, "block": BPlayername, "blockid": BPlayerid, "blockerindex": blockerIndex}
                     theList.append(d)  # Adds Each General Shot Information To The List.
                 else:
                     SPlayername = shooter.firstname + " " + shooter.lastname
                     SPlayerid = shooter.playerid
-                    d = {"player": SPlayername, "id": SPlayerid, "shooterindex": shooterIndex, "team": teamabb, "quarter": shotquarter, "begin": beginsearch, "end": endsearch, "outcome": outcome, "distance": feet}
+                    d = {"player": SPlayername, "id": SPlayerid, "shooterindex": shooterIndex, "team": teamabb, "quarter": shotquarter, "time": gameClock, "begin": beginsearch, "end": endsearch, "outcome": outcome, "distance": feet}
                     theList.append(d)  # Adds Each General Shot Information To The List.
         return theList
 
@@ -366,25 +366,20 @@ class game:
         momentCount = 0
         listCount = 0
         shotAlreadyFound = False
-        isShotDiscovered = False
-        isRimHeightDiscovered = False
-        shotNotFound = False
-
-        shotDict = {}  # Initialize Shot Information Dictionary.
-        coordinate = {}  # Initialize Coordinates Dictionary.
         shotCoordinates = []  # Initialize List Of Coordinates For Each Shot.
         theListOfShots = []  # Initialize List Of Shots.
         shotTimes = []  # Initialize a List of Shot Times
-        #print(momentlist[len(momentlist)-1].gameclock)
 
         while listCount < len(theList):  # Loop Through Each Shot Found.
+            isRimHeightDiscovered = False
+            isShotDiscovered = False
             shotNotFound = False
-            quarterEndFound = False
             print("SHOT #: ", listCount)
             playername = theList[listCount]["player"]  # Get Shot Information
             playerid = theList[listCount]["id"]
             shooterindex = theList[listCount]["shooterindex"]
             shotquarter = theList[listCount]["quarter"]
+            shottime = theList[listCount]["time"]
             if not shotAlreadyFound:
                 beginsearch = theList[listCount]["begin"]
             endsearch = theList[listCount]["end"]
@@ -403,19 +398,15 @@ class game:
                 blockindex = theList[listCount]["blockerindex"]
             else:
                 blockid = 0
+            shotAlreadyFound = False
             while momentCount < len(momentlist) - 1:  # Loop Through Each Moment.
                 #print("Shot #", listCount)
                 print(1)
                 quarter = momentlist[momentCount].period  # Get Quarter
                 gameClock = momentlist[momentCount].gameclock  # Get Game Clock
                 if beginsearch > momentlist[0].gameclock:
-                    shotDict = {"player": playername, "begin": convert(int(beginsearch)), "end": convert(int(endsearch))}
-                    theListOfShots.append(shotDict)
-                    momentCount = 0
-                    listCount += 1
                     shotNotFound = True
                     break
-
                 if quarter == shotquarter:  # Look For Quarter Shot Occurred.
                     print(2)
                     print(quarter, beginsearch, endsearch, "CLOCK: ", gameClock)
@@ -482,43 +473,39 @@ class game:
                         while timeError == momentlist[counter].gameclock:
                             counter += 1
                         momentCount = counter
-
                     if gameClock < endsearch and diff <= 0.05:
-                        if blockid != 0:
-                            shotDict = {"playername": playername, "playerid": playerid, "team": teamabb, "quarter": shotquarter, "time": endsearch+1, "result": outcome, "distance": distance, "block": block, "blockid": blockid}
-                        else:
-                            shotDict = {"player": playername, "begin": convert(int(beginsearch)), "end": convert(int(endsearch))}
-                        theListOfShots.append(shotDict)
-                        momentCount = 0
-                        print("LIST BEFORE: ", listCount)
-                        listCount += 1
-                        print("LIST AFTER: ", listCount)
                         shotNotFound = True
-                        shotAlreadyFound = False
+                        break
+                    if not isShotDiscovered and momentCount == len(momentlist) - 1 and shotquarter == 4 and endsearch == 0:
+                        shotNotFound = True
                         break
                 if quarter > shotquarter:
-                    quarterEndFound = True
-                    shotAlreadyFound = False
+                    shotNotFound = True
                     break
                 momentCount += 1
 
-            if quarterEndFound:
+            '''
+            if shotNotFound and distance <= 1:
+                length = len(theListOfShots) - 1
+                previousShotCoordinates = theListOfShots[length]["coordinates"]
+                while True:
+            '''
+
+
+            if shotNotFound:
                 if blockid != 0:
                     shotDict = {"playername": playername, "playerid": playerid, "team": teamabb, "quarter": shotquarter,
-                                "time": endsearch + 1, "result": outcome, "distance": distance, "block": block,
+                                "time": convert(int(shottime)), "result": outcome, "distance": distance, "block": block,
                                 "blockid": blockid}
                 else:
                     shotDict = {"player": playername, "begin": convert(int(beginsearch)),
-                                "end": convert(int(endsearch))}
+                                "end": convert(int(endsearch)), "distance": distance}
                 theListOfShots.append(shotDict)
                 momentCount = 0
                 listCount += 1
 
-            #print("Shot Ends ", shotNotFound)
-            if not shotNotFound and not quarterEndFound:
+            else:
                 print(17)
-                shotAlreadyFound = False
-
                 timeCounter = 0
                 if len(shotTimes) > 0:
                     print(18)
@@ -538,24 +525,7 @@ class game:
                                             break
                         timeCounter += 1
 
-                if not shotAlreadyFound and not quarterEndFound:
-                    print(25)
-                    shotTimes.append(endCoordinate)
-
-                if shotAlreadyFound and momentCount == len(momentlist) - 1 and shotquarter == 4 and endsearch == 0 and not quarterEndFound:
-                    if blockid != 0:
-                        shotDict = {"playername": playername, "playerid": playerid, "team": teamabb,
-                                    "quarter": shotquarter, "time": time, "result": outcome, "distance": distance,
-                                    "block": block, "blockid": blockid}
-                    else:
-                        shotDict = {"player": playername, "begin": convert(int(beginsearch)),
-                                    "end": convert(int(endsearch))}
-                    theListOfShots.append(shotDict)
-                    listCount += 1
-                    print(1)
-                    break
-
-                if shotAlreadyFound and not quarterEndFound:
+                if shotAlreadyFound:
                     print(26)
                     #beginsearch = endCoordinate["gameclock"] - 0.04
                     momentindex = endCoordinate["momentindex"]
@@ -563,10 +533,9 @@ class game:
                     print(beginsearch)
                     shotCoordinates = []
                     momentCount = 0
-                    isRimHeightDiscovered = False
-                    isShotDiscovered = False
 
-                if not shotAlreadyFound and not quarterEndFound:
+                if not shotAlreadyFound:
+                    shotTimes.append(endCoordinate)
                     print(27)
                     if len(shotCoordinates) == 0:
                         print(28)
@@ -600,8 +569,6 @@ class game:
                     theListOfShots.append(shotDict)  # Store All Shot Information In The List.
                     shotCoordinates = []  # Resets The Coordinates List For The Next Shot.
                     shotDict = {}  # Resets The Shot Information Dictionary For The Next Shot.
-                    isRimHeightDiscovered = False
-                    isShotDiscovered = False
                     listCount += 1
                     momentCount = 0
         return theListOfShots
