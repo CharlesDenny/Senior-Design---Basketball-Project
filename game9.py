@@ -224,6 +224,7 @@ class game:
             assistFlag = False
             blockFlag = False
             homePlayersFinished = False
+            visitorPlayersFinished = False
             gameClock = event.gameclock
 
             if (keyword1 in event.text or keyword2 in event.text) and keyword3 in event.text:  # Look For Keywords To Find Shots.
@@ -241,10 +242,15 @@ class game:
                 if keyword2 in event.text:
                     outcome = "Missed"
                 playerCount = 0
-                for players in self.players:  # Loop Through List Of Players To Determine Who Took The Shot.
+                while playerCount < len(self.players):  # Loop Through List Of Players To Determine Who Took The Shot.
                     if playerCount >= len(self.home.players):
                         homePlayersFinished = True
                         if playerCount >= len(self.visitor.players):
+                            break
+
+                    if playerCount >= len(self.visitor.players):
+                        visitorPlayersFinished = True
+                        if playerCount >= len(self.home.players):
                             break
 
                     if not homePlayersFinished:
@@ -292,50 +298,51 @@ class game:
                                 teamabb = self.home.teamname_abbrev
                                 shooterIndex = playerCount
 
-                    firstLetter = self.visitor.players[playerCount].firstname[
-                        0]  # Compare First Initial And Last Name In PLay-By-Play.
-                    firstInitial = firstLetter + "."
-                    lastname = self.visitor.players[playerCount].lastname
-                    name = firstInitial + " " + lastname
-                    if name in event.text:
+                    if not visitorPlayersFinished:
+                        firstLetter = self.visitor.players[playerCount].firstname[
+                            0]  # Compare First Initial And Last Name In PLay-By-Play.
+                        firstInitial = firstLetter + "."
+                        lastname = self.visitor.players[playerCount].lastname
+                        name = firstInitial + " " + lastname
+                        if name in event.text:
 
-                        if "ft" in event.text:
-                            ftloc = event.text.find("ft")
-                            if event.text[ftloc-3] == " ":
-                                feet = int(event.text[ftloc-2])
+                            if "ft" in event.text:
+                                ftloc = event.text.find("ft")
+                                if event.text[ftloc-3] == " ":
+                                    feet = int(event.text[ftloc-2])
+                                else:
+                                    firstDigit = event.text[ftloc-3]
+                                    secondDigit = event.text[ftloc-2]
+                                    feet = int((firstDigit + secondDigit))
+
+                            if "rim" in event.text:
+                                feet = 0
+
+                            nloc = event.text.find(name)
+                            if "assist" in event.text:
+                                aloc = event.text.find("assist")
+                                assistFlag = True
+                                if nloc < aloc:
+                                    shooter = self.visitor.players[playerCount]
+                                    teamabb = self.visitor.teamname_abbrev
+                                    shooterIndex = playerCount
+                                else:
+                                    assister = self.visitor.players[playerCount]
+                                    assisterIndex = playerCount
+                            elif "block" in event.text:
+                                bloc = event.text.find("block")
+                                blockFlag = True
+                                if nloc < bloc:
+                                    shooter = self.visitor.players[playerCount]
+                                    teamabb = self.visitor.teamname_abbrev
+                                    shooterIndex = playerCount
+                                else:
+                                    blocker = self.visitor.players[playerCount]
+                                    blockerIndex = playerCount
                             else:
-                                firstDigit = event.text[ftloc-3]
-                                secondDigit = event.text[ftloc-2]
-                                feet = int((firstDigit + secondDigit))
-
-                        if "rim" in event.text:
-                            feet = 0
-
-                        nloc = event.text.find(name)
-                        if "assist" in event.text:
-                            aloc = event.text.find("assist")
-                            assistFlag = True
-                            if nloc < aloc:
                                 shooter = self.visitor.players[playerCount]
                                 teamabb = self.visitor.teamname_abbrev
                                 shooterIndex = playerCount
-                            else:
-                                assister = self.visitor.players[playerCount]
-                                assisterIndex = playerCount
-                        elif "block" in event.text:
-                            bloc = event.text.find("block")
-                            blockFlag = True
-                            if nloc < bloc:
-                                shooter = self.visitor.players[playerCount]
-                                teamabb = self.visitor.teamname_abbrev
-                                shooterIndex = playerCount
-                            else:
-                                blocker = self.visitor.players[playerCount]
-                                blockerIndex = playerCount
-                        else:
-                            shooter = self.visitor.players[playerCount]
-                            teamabb = self.visitor.teamname_abbrev
-                            shooterIndex = playerCount
                     playerCount += 1
 
                 if assistFlag:
@@ -515,6 +522,8 @@ class game:
                         while timeError == momentlist[counter].gameclock:
                             #print(19)
                             counter += 1
+                            if counter >= len(momentlist):
+                                break
                         momentCount = counter
                     if gameClock < endsearch and diff <= 0.05:
                         #print(20)
@@ -529,6 +538,9 @@ class game:
                     shotNotFound = True
                     break
                 momentCount += 1
+
+            if len(shotCoordinates) == 0:
+                shotNotFound = True
 
             #print("BEFORE POSSESSION FUNCTION")
             if not shotNotFound:
@@ -567,7 +579,7 @@ class game:
                 if not playerInPossession:
                     #print(27)
                     possession = momentlist[releaseMoment].getbhbd()
-                    if playerid == possession[0].playerid or newPlayerID == possession[0].playerid:
+                    if possession[0] is not None and (playerid == possession[0].playerid or newPlayerID == possession[0].playerid):
                         #print(28)
                         playerInPossession = True
                         if newPlayerID == possession[0].playerid:
@@ -585,28 +597,31 @@ class game:
                             maxHIndex = index
                         index += 1
                     index = maxHIndex + 1
-                    while index < len(shotCoordinates):
-                        if index == len(shotCoordinates) - 1:
-                            landIndex = index
-                            break
-                        elif shotCoordinates[index]["z"] < shotCoordinates[index-1]["z"] + uncertainty:
-                            index += 1
-                        else:
-                            landIndex = index - 1
-                            break
-                    x = shotCoordinates[landIndex]["x"]
-                    y = shotCoordinates[landIndex]["y"]
-                    #print(shotCoordinates)
-                    #print(maxHeight)
-                    #print(shotCoordinates[landIndex]["gameclock"])
-                    #print(x, y)
-
-                    # Rim Locations: (X: 5.25, Y: 25), (X: 88.75, Y: 25)
-                    if (x >= 0 and x <= 15.25 and y >= 15 and y <= 35) or (x >= 78.75 and x <= 94 and y >= 15 and y <= 35):
-                        pass
-                    else:
+                    if index ==  len(shotCoordinates):
                         playerInPossession = False
-                    landIndex = 0
+                    else:
+                        while index < len(shotCoordinates):
+                            if index == len(shotCoordinates) - 1:
+                                landIndex = index
+                                break
+                            elif shotCoordinates[index]["z"] < shotCoordinates[index-1]["z"] + uncertainty:
+                                index += 1
+                            else:
+                                landIndex = index - 1
+                                break
+                        x = shotCoordinates[landIndex]["x"]
+                        y = shotCoordinates[landIndex]["y"]
+                        #print(shotCoordinates)
+                        #print(maxHeight)
+                        #print(shotCoordinates[landIndex]["gameclock"])
+                        #print(x, y)
+
+                        # Rim Locations: (X: 5.25, Y: 25), (X: 88.75, Y: 25)
+                        if (x >= 0 and x <= 15.25 and y >= 15 and y <= 35) or (x >= 78.75 and x <= 94 and y >= 15 and y <= 35):
+                            pass
+                        else:
+                            playerInPossession = False
+                        landIndex = 0
 
                 if not playerInPossession:
                     #print(29)
@@ -739,6 +754,9 @@ class game:
             upIndex += 1
 
         downIndex = maxHeightIndex + 1
+
+        if maxHeightIndex == len(coordinates) - 1:      # If the maximum height is the last coordinate
+            return isAirBall
 
         if coordinates[maxHeightIndex]["x"] < coordinates[maxHeightIndex + 1]["x"]:
             xIncreasing = True
@@ -921,7 +939,7 @@ class game:
             playerCount += 1
 
         while momentCount < len(momentlist) and endReached is False:
-            if momentCount == len(momentlist) - 1:
+            if momentCount == len(momentlist) - 2:
                 endReached = True
             SamePlayerFoundAfterPass = False
             NewPlayerBeforePass = False
@@ -1087,7 +1105,7 @@ class game:
                     if j + 1 < len(theListOfPasses):
                         if theListOfPasses[j]["coordinates"][0]["gameclock"] < shotTimeRanges[i]["start_time"] or theListOfPasses[j]["quarter"] < theListOfPasses[j+1]["quarter"]:
                             diff = abs(theListOfPasses[j]["coordinates"][0]["gameclock"] - shotTimeRanges[i]["start_time"])
-                            if diff > 5:
+                            if diff > 30:
                                 break
                             else:
                                 if theListOfPasses[j]["quarter"] < theListOfPasses[j+1]["quarter"]:
@@ -1142,7 +1160,7 @@ class game:
                                 theListOfPasses[j]["quarter"] < theListOfPasses[j + 1]["quarter"]:
                             diff = abs(
                                 theListOfPasses[j]["coordinates"][0]["gameclock"] - shotTimeRanges[i]["start_time"])
-                            if diff > 5:
+                            if diff > 30:
                                 break
                             else:
                                 if theListOfPasses[j]["quarter"] < theListOfPasses[j + 1]["quarter"]:
@@ -1816,7 +1834,7 @@ if __name__ == "__main__":
     shotlist = g1.get_list_of_shots()
 
     shots = g1.getShots(shotlist)
-    '''
+
     i = 0
     for shot in shots:
         print(shot)
@@ -1835,7 +1853,8 @@ if __name__ == "__main__":
             if shots[i]["airball"] == True:
                 print(shot)
         i += 1
-    '''
+
+    print("\n")
 
     shottimes = getShotTimeRanges(shots)
     i = 0
